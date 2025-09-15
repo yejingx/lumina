@@ -1,0 +1,11 @@
+bin/
+debug
+cover.out
+dashboard/build
+
+
+# IDE
+.vscode
+.idea
+
+docker/volumes/

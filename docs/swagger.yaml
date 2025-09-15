@@ -1,0 +1,214 @@
+definitions:
+  dao.CreateUserRequest:
+    properties:
+      departmentId:
+        description: 部门id
+        type: integer
+      isAdmin:
+        description: 是否管理员
+        type: boolean
+      nickname:
+        description: 昵称
+        type: string
+      password:
+        description: 密码
+        type: string
+      username:
+        description: 用户名
+        type: string
+    required:
+    - departmentId
+    - nickname
+    - password
+    - username
+    type: object
+  dao.CreateUserResponse:
+    properties:
+      id:
+        description: 用户ID
+        type: integer
+    type: object
+  dao.ListUsersResponse:
+    properties:
+      items:
+        description: 用户列表
+        items:
+          $ref: '#/definitions/dao.UserSpec'
+        type: array
+      total:
+        description: 用户总数
+        type: integer
+    type: object
+  dao.LoginRequest:
+    properties:
+      password:
+        description: 密码
+        type: string
+      username:
+        description: 用户名
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dao.LoginResponse:
+    properties:
+      token:
+        description: 登录凭证
+        type: string
+      user:
+        $ref: '#/definitions/dao.UserSpec'
+    type: object
+  dao.UserSpec:
+    properties:
+      createdTime:
+        type: string
+      id:
+        type: integer
+      isAdmin:
+        type: boolean
+      nickname:
+        type: string
+      username:
+        type: string
+    required:
+    - createdTime
+    - nickname
+    - username
+    type: object
+  server.ErrorResponse:
+    properties:
+      error:
+        description: 错误信息
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/admin/user/{user_id}:
+    delete:
+      description: 删除指定的用户
+      parameters:
+      - description: 用户ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除用户
+      tags:
+      - 用户管理
+  /api/v1/admin/users:
+    get:
+      consumes:
+      - application/json
+      description: 获取用户列表
+      parameters:
+      - description: 分页开始位置
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: 分页大小
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.ListUsersResponse'
+      summary: 获取用户列表
+      tags:
+      - 用户管理
+    post:
+      consumes:
+      - application/json
+      description: 创建用户
+      parameters:
+      - description: 请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.CreateUserResponse'
+      summary: 创建用户
+      tags:
+      - 用户管理
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录
+      parameters:
+      - description: 请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dao.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.LoginResponse'
+      summary: 用户登录
+      tags:
+      - 用户
+  /api/v1/logout:
+    post:
+      consumes:
+      - application/json
+      description: 用户登出
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: 用户登出
+      tags:
+      - 用户
+  /api/v1/settings/profile:
+    get:
+      consumes:
+      - application/json
+      description: 获取用户信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.UserSpec'
+      summary: 获取用户信息
+      tags:
+      - 用户管理
+swagger: "2.0"

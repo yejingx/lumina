@@ -1,0 +1,12 @@
+addr: 0.0.0.0:8181
+jwtSecret: 13gjqFfRWgTdKQqzMOrdAw
+
+db:
+  dsn: root:root@tcp(127.0.0.1:22406)/lumina?charset=utf8mb4&parseTime=True&loc=Local
+
+s3:
+  endpoint: 127.0.0.1:19100
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  useSSL: false
+  bucket: lumina

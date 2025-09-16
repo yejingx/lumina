@@ -3,12 +3,9 @@ COMMIT=$(shell git rev-parse --short HEAD)
 LDFLAGS="-X internal/version.VERSION=$(VER) -X internal/version.COMMIT=$(COMMIT)"
 
 app:
-	go build -ldflags $(LDFLAGS) -o bin/lumina main.go
+	go build -ldflags $(LDFLAGS) -o bin/lumina-server cmd/server/*.go
+	go build -ldflags $(LDFLAGS) -o bin/lumina-agent cmd/agent/*.go
 .PHONY: app
-
-run:
-	go run main.go -c etc/config.yaml
-.PHONY: run
 
 dashboard:
 	cd dashboard && npm install && npm run build
@@ -19,5 +16,5 @@ test:
 .PHONY: test
 
 docs:
-	swag init -g ./main.go -o docs
+	swag init -g ./cmd/server/main.go ./cmd/agent/main.go -o docs
 .PHONY: docs

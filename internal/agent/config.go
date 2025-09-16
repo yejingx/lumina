@@ -8,9 +8,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type TritonConfig struct {
+	ServerAddr   string `yaml:"serverAddr"`
+	ModelRepoDir string `yaml:"modelRepoDir"`
+}
+
 type Config struct {
-	ServerAddr string `yaml:"server_addr"`
-	WorkDir    string `yaml:"work_dir"`
+	LuminaServerAddr string       `yaml:"luminaServerAddr"`
+	WorkDir          string       `yaml:"workDir"`
+	Triton           TritonConfig `yaml:"triton"`
 }
 
 func (c Config) ModelDir() string {
@@ -23,8 +29,12 @@ func (c Config) DataDir() string {
 
 func DefaultConfig() *Config {
 	return &Config{
-		ServerAddr: "localhost:8080",
+		LuminaServerAddr: "localhost:8080",
 		WorkDir:    "./agent_dir",
+		Triton: TritonConfig{
+			ServerAddr:   "localhost:8001",
+			ModelRepoDir: "./model_repo",
+		},
 	}
 }
 

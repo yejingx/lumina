@@ -2,6 +2,7 @@ package dao
 
 import (
 	"lumina/internal/model"
+	"strings"
 )
 
 type DetectOptions struct {
@@ -13,11 +14,21 @@ type DetectOptions struct {
 	IoUThreshold  float32 `json:"iouThreshold,omitempty"`
 }
 
+func (d *DetectOptions) GetLabelMap() map[int]string {
+	labels := strings.Split(d.Labels, ",")
+	labelMap := make(map[int]string)
+	for i, label := range labels {
+		labelMap[i] = label
+	}
+	return labelMap
+}
+
 type JobSpec struct {
-	Uuid        string          `json:"uuid" binding:"required"`
-	Status      model.JobStatus `json:"status" binding:"required"`
-	CreatedTime string          `json:"createdTime" binding:"required,datetime=RFC3339"`
-	Detect      *DetectOptions  `json:"detect,omitempty"`
+	Uuid       string          `json:"uuid" binding:"required"`
+	Status     model.JobStatus `json:"status" binding:"required"`
+	CreateTime string          `json:"createTime" binding:"required,datetime=RFC3339"`
+	UpdateTime string          `json:"updateTime" binding:"required,datetime=RFC3339"`
+	Detect     *DetectOptions  `json:"detect,omitempty"`
 }
 
 type GetJobListResp struct {

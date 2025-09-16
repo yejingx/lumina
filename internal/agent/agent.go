@@ -2,52 +2,109 @@ package agent
 
 import (
 	"context"
-	"lumina/pkg/log"
+	"crypto/tls"
+	"net/http"
 	"time"
 
-	badger "github.com/dgraph-io/badger/v4"
+	"github.com/Trendyol/go-triton-client/base"
+	tritonGrpc "github.com/Trendyol/go-triton-client/client/grpc"
 	"github.com/sirupsen/logrus"
+
+	"lumina/pkg/log"
 )
 
 type Agent struct {
-	conf   *Config
-	ctx    context.Context
-	logger *logrus.Entry
-	db     *badger.DB
+	conf      *Config
+	ctx       context.Context
+	cancel    context.CancelFunc
+	logger    *logrus.Entry
+	db        *MetadataDB
+	httpCli   *http.Client
+	tritonCli base.Client
+	executors map[string]*JobExecutor
 }
 
 func NewAgent(conf *Config) (*Agent, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+
 	logger := log.GetLogger(ctx).WithField("component", "agent")
 
-	db, err := badger.Open(badger.DefaultOptions(conf.DataDir()))
+	db, err := NewMetadataDB(conf.DataDir(), logger)
 	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	httpCli := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: 15 * time.Second,
+	}
+
+	tritonCli, err := tritonGrpc.NewClient(
+		conf.Triton.ServerAddr,
+		false, // verbose logging
+		30,    // connection timeout in seconds
+		30,    // network timeout in seconds
+		false, // use SSL
+		true,  // insecure connection
+		nil,   // existing gRPC connection
+		nil,   // logger
+	)
+	if err != nil {
+		cancel()
 		return nil, err
 	}
 
 	return &Agent{
-		conf:   conf,
-		ctx:    ctx,
-		logger: logger,
-		db:     db,
+		conf:      conf,
+		ctx:       ctx,
+		cancel:    cancel,
+		logger:    logger,
+		db:        db,
+		httpCli:   httpCli,
+		tritonCli: tritonCli,
+		executors: make(map[string]*JobExecutor),
 	}, nil
 }
 
 func (a *Agent) Start() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+	fetchTicker := time.NewTicker(5 * time.Second)
+	syncTicker := time.NewTicker(1 * time.Second)
+	defer func() {
+		fetchTicker.Stop()
+		syncTicker.Stop()
+		a.logger.Info("agent stopped")
+	}()
+
+	reclaimCh := make(chan string, 10)
+
 	for {
 		select {
 		case <-a.ctx.Done():
 			return
-		case <-ticker.C:
-			a.logger.Info("tick")
+		case jobId := <-reclaimCh:
+			a.logger.Infof("reclaim job %s", jobId)
+			delete(a.executors, jobId)
+		case <-fetchTicker.C:
+			a.logger.Debug("fetch tick")
+			if err := a.syncJobsFromServer(); err != nil {
+				a.logger.WithError(err).Errorf("sync jobs from server failed")
+			}
+		case <-syncTicker.C:
+			a.logger.Debug("sync tick")
+			if err := a.syncJobsFromMedadata(reclaimCh); err != nil {
+				a.logger.WithError(err).Errorf("sync jobs from metadata failed")
+			}
 		}
 	}
 }
 
 func (a *Agent) Stop() {
-	<-a.ctx.Done()
+	a.cancel()
 	a.db.Close()
-	a.logger.Info("agent stopped")
 }

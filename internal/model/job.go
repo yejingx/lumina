@@ -20,9 +20,10 @@ type DetectOptions struct {
 }
 
 type Job struct {
-	Id          int            `json:"id" gorm:"primaryKey"`
-	Uuid        string         `json:"uuid" gorm:"unique"`
-	Status      JobStatus      `json:"status" gorm:"default:0"`
-	CreatedTime time.Time      `json:"created_time" gorm:"datetime;autoCreateTime"`
-	Detect      *DetectOptions `json:"detect" gorm:"type:json"`
+	Id         int            `json:"id" gorm:"primaryKey"`
+	Uuid       string         `json:"uuid" gorm:"unique"`
+	Status     JobStatus      `json:"status" gorm:"default:0"`
+	CreateTime time.Time      `json:"create_time" gorm:"datetime;autoCreateTime"`
+	UpdateTime time.Time      `json:"update_time" gorm:"datetime;autoCreateTime;autoUpdateTime"`
+	Detect     *DetectOptions `json:"detect" gorm:"type:json"`
 }

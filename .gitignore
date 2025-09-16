@@ -9,3 +9,6 @@ dashboard/build
 .idea
 
 docker/volumes/
+agent_dir/
+model_repo/
+assets/*.mp4

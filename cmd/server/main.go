@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"os"
@@ -41,4 +41,8 @@ func init() {
 	rootCmd.AddCommand(serveCommand)
 	rootCmd.AddCommand(updateDBCommand)
 	rootCmd.AddCommand(toolsCmd)
+}
+
+func main() {
+	Execute()
 }

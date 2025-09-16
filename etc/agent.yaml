@@ -1,0 +1,5 @@
+luminaServerAddr: localhost:8080
+workDir: ./agent_dir
+triton:
+  serverAddr: 192.168.3.222:8001
+  modelRepoDir: ./model_repo

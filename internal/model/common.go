@@ -5,13 +5,18 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	"lumina/internal/config"
 )
 
 var DB *gorm.DB
 
-func InitDB(dbConfig config.DBConfig) (*gorm.DB, error) {
+type DBConfig struct {
+	DSN          string `yaml:"dsn"`
+	MaxIdleConns int    `yaml:"maxIdleConns"`
+	MaxOpenConns int    `yaml:"maxOpenConns"`
+	MaxLifetime  int    `yaml:"maxLifetime"`
+}
+
+func InitDB(dbConfig DBConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dbConfig.DSN), &gorm.Config{
 		PrepareStmt: true,
 	})

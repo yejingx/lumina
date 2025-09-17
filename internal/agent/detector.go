@@ -21,7 +21,7 @@ import (
 	"lumina/pkg/log"
 )
 
-type JobExecutor struct {
+type Detector struct {
 	tritonCli base.Client
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -31,13 +31,13 @@ type JobExecutor struct {
 	workDir   string
 }
 
-func NewJobExecutor(tritonCli base.Client, workDir string, parentCtx context.Context, job *dao.JobSpec) (*JobExecutor, error) {
+func NewDetector(tritonCli base.Client, workDir string, parentCtx context.Context, job *dao.JobSpec) (*Detector, error) {
 	workDir = path.Join(workDir, job.Uuid)
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(parentCtx)
-	return &JobExecutor{
+	return &Detector{
 		tritonCli: tritonCli,
 		ctx:       ctx,
 		cancel:    cancel,
@@ -48,11 +48,11 @@ func NewJobExecutor(tritonCli base.Client, workDir string, parentCtx context.Con
 	}, nil
 }
 
-func (e *JobExecutor) Job() *dao.JobSpec {
+func (e *Detector) Job() *dao.JobSpec {
 	return e.job
 }
 
-func (e *JobExecutor) Start() error {
+func (e *Detector) Start() error {
 	if isLive, err := e.tritonCli.IsServerLive(e.ctx, nil); err != nil {
 		return err
 	} else if !isLive {
@@ -65,18 +65,20 @@ func (e *JobExecutor) Start() error {
 		return errors.New("triton server is not ready")
 	}
 
-	if isReady, err := e.tritonCli.IsModelReady(e.ctx, e.job.Detect.ModelName, "1", nil); err != nil {
-		return err
-	} else if !isReady {
-		return errors.New("triton model is not ready")
-	}
-
 	if e.job.Detect == nil {
 		e.logger.Info("empty job finished")
 		return nil
 	}
 
-	video, err := gocv.VideoCaptureFile(e.job.Detect.Input)
+	if e.job.Detect != nil {
+		if isReady, err := e.tritonCli.IsModelReady(e.ctx, e.job.Detect.ModelName, "1", nil); err != nil {
+			return err
+		} else if !isReady {
+			return errors.New("triton model is not ready")
+		}
+	}
+
+	video, err := gocv.VideoCaptureFile(e.job.Input)
 	if err != nil {
 		return fmt.Errorf("failed to open input video: %v", err)
 	}
@@ -86,16 +88,16 @@ func (e *JobExecutor) Start() error {
 	return nil
 }
 
-func (e *JobExecutor) Stop() {
+func (e *Detector) Stop() {
 	e.cancel()
 	<-e.Done()
 }
 
-func (e *JobExecutor) Done() <-chan struct{} {
+func (e *Detector) Done() <-chan struct{} {
 	return e.doneChan
 }
 
-func (e *JobExecutor) inferRoutine(frameCh <-chan gocv.Mat) {
+func (e *Detector) inferRoutine(frameCh <-chan gocv.Mat) {
 	frameCount := 0
 	totalInferenceTime := time.Duration(0)
 	labelMap := e.job.Detect.GetLabelMap()
@@ -130,7 +132,7 @@ func (e *JobExecutor) inferRoutine(frameCh <-chan gocv.Mat) {
 	}
 }
 
-func (e *JobExecutor) runJob(input *gocv.VideoCapture) error {
+func (e *Detector) runJob(input *gocv.VideoCapture) error {
 	e.logger.Info("job started")
 
 	fps := input.Get(gocv.VideoCaptureFPS)
@@ -156,10 +158,10 @@ func (e *JobExecutor) runJob(input *gocv.VideoCapture) error {
 
 	lastFrameTime := time.Now()
 	var interval time.Duration
-	if e.job.Detect.Interval <= 0 {
+	if e.job.Interval <= 0 {
 		interval = 3 * time.Second
 	} else {
-		interval = time.Duration(e.job.Detect.Interval) * time.Millisecond
+		interval = time.Duration(e.job.Interval) * time.Millisecond
 	}
 
 	for {
@@ -197,23 +199,27 @@ func (e *JobExecutor) runJob(input *gocv.VideoCapture) error {
 	return nil
 }
 
-func (e *JobExecutor) saveResult(frame *gocv.Mat, boxes []*DetectionBox) error {
+func (e *Detector) saveResult(frame *gocv.Mat, boxes []*dao.DetectionBox) error {
 	ts := time.Now().UnixNano()
-	result := &DetectionResult{
+	imagePath := path.Join(e.workDir, fmt.Sprintf("%d.jpg", ts))
+	jsonPath := path.Join(e.workDir, fmt.Sprintf("%d.json", ts))
+
+	result := &dao.DetectionResult{
 		JobId:     e.job.Uuid,
 		Timestamp: ts,
+		ImagePath: imagePath,
+		JsonPath:  jsonPath,
 		Boxes:     boxes,
 	}
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		return fmt.Errorf("marshal detection result error: %w", err)
 	}
-	imagePath := path.Join(e.workDir, fmt.Sprintf("%d.jpg", ts))
+
 	if !gocv.IMWrite(imagePath, *frame) {
 		return fmt.Errorf("write image file error")
 	}
 
-	jsonPath := path.Join(e.workDir, fmt.Sprintf("%d.json", ts))
 	tmpPath := jsonPath + ".tmp"
 	if err := os.WriteFile(tmpPath, jsonData, 0644); err != nil {
 		os.Remove(imagePath)
@@ -225,23 +231,7 @@ func (e *JobExecutor) saveResult(frame *gocv.Mat, boxes []*DetectionBox) error {
 	return nil
 }
 
-type DetectionBox struct {
-	X1         int     `json:"x1,omitempty"`
-	Y1         int     `json:"y1,omitempty"`
-	X2         int     `json:"x2,omitempty"`
-	Y2         int     `json:"y2,omitempty"`
-	Confidence float32 `json:"confidence,omitempty"`
-	ClassId    int     `json:"classId,omitempty"`
-	Label      string  `json:"label,omitempty"`
-}
-
-type DetectionResult struct {
-	JobId     string          `json:"jobId"`
-	Timestamp int64           `json:"timestamp"`
-	Boxes     []*DetectionBox `json:"boxes,omitempty"`
-}
-
-func drawDetections(frame *gocv.Mat, boxes []*DetectionBox) gocv.Mat {
+func drawDetections(frame *gocv.Mat, boxes []*dao.DetectionBox) gocv.Mat {
 	annotatedFrame := frame.Clone()
 
 	if len(boxes) == 0 {
@@ -262,7 +252,7 @@ func drawDetections(frame *gocv.Mat, boxes []*DetectionBox) gocv.Mat {
 }
 
 // performInference performs inference on a single frame using Triton
-func performInference(client base.Client, frame *gocv.Mat, modelName string, labelMap map[int]string) (gocv.Mat, []*DetectionBox, error) {
+func performInference(client base.Client, frame *gocv.Mat, modelName string, labelMap map[int]string) (gocv.Mat, []*dao.DetectionBox, error) {
 	frameBytes := frame.ToBytes()
 
 	// Create input tensors
@@ -295,7 +285,7 @@ func performInference(client base.Client, frame *gocv.Mat, modelName string, lab
 		return gocv.NewMat(), nil, fmt.Errorf("failed to get detection data: %v", err)
 	}
 
-	var boxes []*DetectionBox
+	var boxes []*dao.DetectionBox
 	// detections: slice of float32 values with shape [N, 6] containing [x1, y1, x2, y2, confidence, class_id]
 	for i := 0; i < len(detections); i += 6 {
 		if i+5 >= len(detections) {
@@ -314,7 +304,7 @@ func performInference(client base.Client, frame *gocv.Mat, modelName string, lab
 			continue
 		}
 
-		boxes = append(boxes, &DetectionBox{
+		boxes = append(boxes, &dao.DetectionBox{
 			X1:         x1,
 			Y1:         y1,
 			X2:         x2,

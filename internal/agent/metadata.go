@@ -3,11 +3,12 @@ package agent
 import (
 	"encoding/json"
 	"errors"
-	"lumina/internal/dao"
 	"strconv"
 
 	badger "github.com/dgraph-io/badger/v4"
 	"github.com/sirupsen/logrus"
+
+	"lumina/internal/dao"
 )
 
 const (
@@ -17,9 +18,11 @@ const (
 )
 
 type AgentInfo struct {
-	Uuid         *string `json:"uuid,omitempty"`
-	Token        *string `json:"token,omitempty"`
-	RegisterTime *string `json:"registerTime,omitempty"`
+	Uuid              *string `json:"uuid,omitempty"`
+	Token             *string `json:"token,omitempty"`
+	RegisterTime      *string `json:"registerTime,omitempty"`
+	S3AccessKeyID     *string `json:"s3AccessKeyID"`
+	S3SecretAccessKey *string `json:"s3SecretAccessKey"`
 }
 
 func (info *AgentInfo) Update(new *AgentInfo) {
@@ -31,6 +34,12 @@ func (info *AgentInfo) Update(new *AgentInfo) {
 	}
 	if new.RegisterTime != nil {
 		info.RegisterTime = new.RegisterTime
+	}
+	if new.S3AccessKeyID != nil {
+		info.S3AccessKeyID = new.S3AccessKeyID
+	}
+	if new.S3SecretAccessKey != nil {
+		info.S3SecretAccessKey = new.S3SecretAccessKey
 	}
 }
 

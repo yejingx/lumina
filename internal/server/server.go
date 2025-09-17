@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	goerrors "errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -16,20 +17,19 @@ import (
 	"github.com/sirupsen/logrus"
 
 	_ "lumina/docs"
-	"lumina/internal/config"
 	"lumina/pkg/log"
 )
 
 const httpXRequestId = "X-Request-Id"
 
 type Server struct {
-	conf       *config.Config
+	conf       *Config
 	httpServer *http.Server
 	client     *http.Client
 	logger     *logrus.Entry
 }
 
-func NewServer(ctx context.Context, conf *config.Config) (*Server, error) {
+func NewServer(ctx context.Context, conf *Config) (*Server, error) {
 	s := &Server{
 		conf: conf,
 		client: &http.Client{
@@ -109,6 +109,10 @@ type ErrorResponse struct {
 }
 
 func (s *Server) writeError(c *gin.Context, code int, err error) {
+	if code == http.StatusInternalServerError {
+		s.logger.Errorf("error: %v", err)
+		err = fmt.Errorf("internal server error")
+	}
 	c.JSON(code, ErrorResponse{
 		Error: err.Error(),
 	})

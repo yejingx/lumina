@@ -1,7 +1,13 @@
+networks:
+  lumina-bridge:
+    driver: bridge
+
 services:
   minio:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     container_name: lumina-minio
+    networks:
+      - lumina-bridge
     ports:
       - "19200:9000"
       - "19201:9001"
@@ -20,8 +26,10 @@ services:
   mysql:
     image: mysql:8.0
     container_name: lumina-mysql
+    networks:
+      - lumina-bridge
     ports:
-      - "22406:3306"
+      - "22306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: lumina
@@ -36,3 +44,36 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+
+  nsqlookupd:
+    image: nsqio/nsq:v1.2.1
+    container_name: lumina-nsqlookupd
+    networks:
+      - lumina-bridge
+    ports:
+      - "4260:4160"
+      - "4261:4161"
+    command: /nsqlookupd
+
+  nsqd:
+    image: nsqio/nsq:v1.2.1
+    container_name: lumina-nsqd
+    networks:
+      - lumina-bridge
+    ports:
+      - "4250:4150"
+      - "4251:4151"
+    depends_on:
+      - nsqlookupd
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+
+  nsqadmin:
+    image: nsqio/nsq:v1.2.1
+    container_name: lumina-nsqadmin
+    networks:
+      - lumina-bridge
+    ports:
+      - "4271:4171"
+    depends_on:
+      - nsqlookupd
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161

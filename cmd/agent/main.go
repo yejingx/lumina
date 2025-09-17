@@ -40,6 +40,7 @@ func init() {
 
 	rootCmd.AddCommand(serveCommand)
 	rootCmd.AddCommand(jobCmd)
+	rootCmd.AddCommand(registerCmd)
 }
 
 func main() {

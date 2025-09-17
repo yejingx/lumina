@@ -3,25 +3,28 @@ package agent
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Trendyol/go-triton-client/base"
 	tritonGrpc "github.com/Trendyol/go-triton-client/client/grpc"
+	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
 	"lumina/pkg/log"
 )
 
 type Agent struct {
-	conf      *Config
-	ctx       context.Context
-	cancel    context.CancelFunc
-	logger    *logrus.Entry
-	db        *MetadataDB
-	httpCli   *http.Client
-	tritonCli base.Client
-	executors map[string]*JobExecutor
+	conf        *Config
+	ctx         context.Context
+	cancel      context.CancelFunc
+	logger      *logrus.Entry
+	db          *MetadataDB
+	httpCli     *http.Client
+	tritonCli   base.Client
+	executors   map[string]*Detector
+	nsqProducer *nsq.Producer
 }
 
 func NewAgent(conf *Config) (*Agent, error) {
@@ -60,19 +63,28 @@ func NewAgent(conf *Config) (*Agent, error) {
 		return nil, err
 	}
 
+	producer, err := nsq.NewProducer(conf.NSQ.NSQDAddr, nsq.NewConfig())
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("create NSQ producer failed: %w", err)
+	}
+
 	return &Agent{
-		conf:      conf,
-		ctx:       ctx,
-		cancel:    cancel,
-		logger:    logger,
-		db:        db,
-		httpCli:   httpCli,
-		tritonCli: tritonCli,
-		executors: make(map[string]*JobExecutor),
+		conf:        conf,
+		ctx:         ctx,
+		cancel:      cancel,
+		logger:      logger,
+		db:          db,
+		httpCli:     httpCli,
+		tritonCli:   tritonCli,
+		executors:   make(map[string]*Detector),
+		nsqProducer: producer,
 	}, nil
 }
 
 func (a *Agent) Start() {
+	go a.uploadRoutine()
+
 	fetchTicker := time.NewTicker(5 * time.Second)
 	syncTicker := time.NewTicker(1 * time.Second)
 	defer func() {
@@ -107,4 +119,5 @@ func (a *Agent) Start() {
 func (a *Agent) Stop() {
 	a.cancel()
 	a.db.Close()
+	a.nsqProducer.Stop()
 }

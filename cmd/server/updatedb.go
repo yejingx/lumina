@@ -4,8 +4,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/config"
 	"lumina/internal/model"
+	"lumina/internal/server"
 )
 
 var insertTestData bool
@@ -14,7 +14,7 @@ var updateDBCommand = &cobra.Command{
 	Use:   "updatedb",
 	Short: "Update database tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf, err := config.InitConfig(configFile)
+		conf, err := server.LoadConfig(configFile)
 		if err != nil {
 			logrus.Fatal("initConfig error, ", err.Error())
 		}

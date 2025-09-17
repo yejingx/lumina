@@ -3,3 +3,11 @@ workDir: ./agent_dir
 triton:
   serverAddr: 192.168.3.222:8001
   modelRepoDir: ./model_repo
+s3:
+  endpoint: 127.0.0.1:19200
+  bucket: agent-images
+  region: us-east-1
+  useSSL: false
+nsq:
+  nsqdAddr: 127.0.0.1:4250
+  topic: agent_result

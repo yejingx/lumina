@@ -41,6 +41,11 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	apiV1.POST("/login", s.handleLogin)
 	apiV1.POST("/logout", s.handleLogout)
 
+	apiV1.POST("/register", s.handleRegister)
+	agentAuthed := apiV1.Group("")
+	agentAuthed.Use(AgentAuth())
+	agentAuthed.POST("/unregister", s.handleUnregister)
+
 	v1Authed := apiV1.Group("")
 	v1Authed.Use(NeedAuth(false))
 

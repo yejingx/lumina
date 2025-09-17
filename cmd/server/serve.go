@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/config"
 	"lumina/internal/model"
 	"lumina/internal/server"
 )
@@ -26,7 +25,7 @@ func init() {
 }
 
 func runServe() {
-	conf, err := config.InitConfig(configFile)
+	conf, err := server.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}

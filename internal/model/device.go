@@ -8,7 +8,7 @@ import (
 )
 
 type Device struct {
-	ID           uint      `gorm:"primaryKey"`
+	Id           int       `gorm:"primaryKey"`
 	Uuid         string    `gorm:"type:char(96);unique"`
 	Token        string    `gorm:"type:char(96);unique"`
 	RegisterTime time.Time `gorm:"datetime;autoCreateTime"`
@@ -56,7 +56,7 @@ func GetDeviceByToken(token string) (*Device, error) {
 }
 
 type AccessToken struct {
-	ID         uint      `gorm:"primaryKey"`
+	Id         int       `gorm:"primaryKey"`
 	Token      string    `gorm:"type:char(96);unique"`
 	CreateTime time.Time `gorm:"datetime;autoCreateTime"`
 	ExpireTime time.Time `gorm:"datetime;autoCreateTime"`

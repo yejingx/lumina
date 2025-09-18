@@ -1,4 +1,4 @@
-package agent
+package exector
 
 import (
 	"context"
@@ -25,13 +25,18 @@ type Detector struct {
 	tritonCli base.Client
 	ctx       context.Context
 	cancel    context.CancelFunc
+	wg        *sync.WaitGroup
 	job       *dao.JobSpec
 	logger    *logrus.Entry
-	doneChan  chan struct{}
+	status    ExectorStatus
 	workDir   string
 }
 
 func NewDetector(tritonCli base.Client, workDir string, parentCtx context.Context, job *dao.JobSpec) (*Detector, error) {
+	if job.Detect == nil {
+		return nil, fmt.Errorf("job %s detect is nil", job.Uuid)
+	}
+
 	workDir = path.Join(workDir, job.Uuid)
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		return nil, err
@@ -41,15 +46,20 @@ func NewDetector(tritonCli base.Client, workDir string, parentCtx context.Contex
 		tritonCli: tritonCli,
 		ctx:       ctx,
 		cancel:    cancel,
+		wg:        &sync.WaitGroup{},
 		job:       job,
+		status:    ExectorStatusStopped,
 		logger:    log.GetLogger(ctx).WithField("job", job.Uuid),
-		doneChan:  make(chan struct{}),
 		workDir:   workDir,
 	}, nil
 }
 
 func (e *Detector) Job() *dao.JobSpec {
 	return e.job
+}
+
+func (e *Detector) Status() ExectorStatus {
+	return e.status
 }
 
 func (e *Detector) Start() error {
@@ -65,17 +75,10 @@ func (e *Detector) Start() error {
 		return errors.New("triton server is not ready")
 	}
 
-	if e.job.Detect == nil {
-		e.logger.Info("empty job finished")
-		return nil
-	}
-
-	if e.job.Detect != nil {
-		if isReady, err := e.tritonCli.IsModelReady(e.ctx, e.job.Detect.ModelName, "1", nil); err != nil {
-			return err
-		} else if !isReady {
-			return errors.New("triton model is not ready")
-		}
+	if isReady, err := e.tritonCli.IsModelReady(e.ctx, e.job.Detect.ModelName, "1", nil); err != nil {
+		return err
+	} else if !isReady {
+		return errors.New("triton model is not ready")
 	}
 
 	video, err := gocv.VideoCaptureFile(e.job.Input)
@@ -83,18 +86,22 @@ func (e *Detector) Start() error {
 		return fmt.Errorf("failed to open input video: %v", err)
 	}
 
-	go e.runJob(video)
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		e.logger.Info("detect job started")
+		e.status = ExectorStatusRunning
+		e.runJob(video)
+		e.logger.Info("detect job stopped")
+	}()
 
 	return nil
 }
 
 func (e *Detector) Stop() {
 	e.cancel()
-	<-e.Done()
-}
-
-func (e *Detector) Done() <-chan struct{} {
-	return e.doneChan
+	e.wg.Wait()
+	e.status = ExectorStatusStopped
 }
 
 func (e *Detector) inferRoutine(frameCh <-chan gocv.Mat) {
@@ -132,48 +139,44 @@ func (e *Detector) inferRoutine(frameCh <-chan gocv.Mat) {
 	}
 }
 
-func (e *Detector) runJob(input *gocv.VideoCapture) error {
-	e.logger.Info("job started")
-
+func (e *Detector) runJob(input *gocv.VideoCapture) {
 	fps := input.Get(gocv.VideoCaptureFPS)
 	width := int(input.Get(gocv.VideoCaptureFrameWidth))
 	height := int(input.Get(gocv.VideoCaptureFrameHeight))
 	logrus.Infof("Video properties: %dx%d @ %.2f FPS", width, height, fps)
 
 	frameChan := make(chan gocv.Mat, 10)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		e.inferRoutine(frameChan)
-	}()
 
 	defer func() {
-		e.logger.Info("job stopped")
 		input.Close()
 		close(frameChan)
-		wg.Wait()
-		close(e.doneChan)
+	}()
+
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		e.inferRoutine(frameChan)
 	}()
 
 	lastFrameTime := time.Now()
 	var interval time.Duration
-	if e.job.Interval <= 0 {
+	if e.job.Detect.Interval <= 0 {
 		interval = 3 * time.Second
 	} else {
-		interval = time.Duration(e.job.Interval) * time.Millisecond
+		interval = time.Duration(e.job.Detect.Interval) * time.Millisecond
 	}
 
 	for {
 		select {
 		case <-e.ctx.Done():
-			return nil
+			return
 		default:
 		}
 
 		frame := gocv.NewMat()
 		if ok := input.Read(&frame); !ok {
 			frame.Close()
+			e.status = ExectorStatusFinished
 			break
 		}
 
@@ -195,8 +198,6 @@ func (e *Detector) runJob(input *gocv.VideoCapture) error {
 			frame.Close()
 		}
 	}
-
-	return nil
 }
 
 func (e *Detector) saveResult(frame *gocv.Mat, boxes []*dao.DetectionBox) error {

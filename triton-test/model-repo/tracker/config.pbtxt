@@ -1,0 +1,50 @@
+name: "tracker"
+backend: "python"
+max_batch_size: 0
+input [
+  {
+    name: "YOLO_OUTPUT"
+    data_type: TYPE_FP32
+    dims: [ -1, 6 ]
+  },
+  {
+    name: "SEQ_ID"
+    data_type: TYPE_INT64
+    dims: [ 1 ]
+  }
+]
+output [
+  {
+    name: "TBOXES"
+    data_type: TYPE_FP32
+    dims: [ -1, 4 ]
+  },
+  {
+    name: "TIDS"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  },
+  {
+    name: "TCLSID"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  },
+  {
+    name: "CONFIDENCE"
+    data_type: TYPE_FP32
+    dims: [ -1 ]
+  }
+]
+instance_group [
+  {
+    kind: KIND_CPU
+  }
+]
+parameters {
+  key: "iou_threshold"
+  value: { string_value: "0.45" }
+}
+parameters {
+  key: "max_age"
+  value: { string_value: "30" }
+}

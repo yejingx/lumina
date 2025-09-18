@@ -12,6 +12,7 @@ import (
 	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
+	"lumina/internal/agent/exector"
 	"lumina/pkg/log"
 )
 
@@ -23,7 +24,7 @@ type Agent struct {
 	db          *MetadataDB
 	httpCli     *http.Client
 	tritonCli   base.Client
-	executors   map[string]*Detector
+	executors   map[string]exector.Executor
 	nsqProducer *nsq.Producer
 }
 
@@ -77,7 +78,7 @@ func NewAgent(conf *Config) (*Agent, error) {
 		db:          db,
 		httpCli:     httpCli,
 		tritonCli:   tritonCli,
-		executors:   make(map[string]*Detector),
+		executors:   make(map[string]exector.Executor),
 		nsqProducer: producer,
 	}, nil
 }
@@ -93,15 +94,10 @@ func (a *Agent) Start() {
 		a.logger.Info("agent stopped")
 	}()
 
-	reclaimCh := make(chan string, 10)
-
 	for {
 		select {
 		case <-a.ctx.Done():
 			return
-		case jobId := <-reclaimCh:
-			a.logger.Infof("reclaim job %s", jobId)
-			delete(a.executors, jobId)
 		case <-fetchTicker.C:
 			a.logger.Debug("fetch tick")
 			if err := a.syncJobsFromServer(); err != nil {
@@ -109,7 +105,7 @@ func (a *Agent) Start() {
 			}
 		case <-syncTicker.C:
 			a.logger.Debug("sync tick")
-			if err := a.syncJobsFromMedadata(reclaimCh); err != nil {
+			if err := a.syncJobsFromMedadata(); err != nil {
 				a.logger.WithError(err).Errorf("sync jobs from metadata failed")
 			}
 		}

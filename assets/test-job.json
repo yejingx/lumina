@@ -4,9 +4,9 @@
   "createTime": "2024-01-15T10:30:00Z",
   "updateTime": "2024-01-15T10:35:00Z",
   "input": "/home/yejingx/lumina/assets/test.mp4",
-  "interval": 1000,
   "detect": {
     "modelName": "pipeline",
+    "interval": 1000,
     "labels": "person,car,bicycle,dog,cat",
     "confThreshold": 0.5,
     "iouThreshold": 0.4

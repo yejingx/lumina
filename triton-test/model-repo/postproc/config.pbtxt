@@ -1,0 +1,40 @@
+name: "postproc"
+backend: "python"
+max_batch_size: 0
+input [
+  {
+    name: "YOLO_RAW"
+    data_type: TYPE_FP32
+    dims: [ -1, -1, -1 ]
+  },
+  {
+    name: "META"
+    data_type: TYPE_FP32
+    dims: [ -1 ]
+  }
+]
+output [
+  {
+    name: "DETECTIONS"
+    data_type: TYPE_FP32
+    dims: [ -1, 6 ]
+  }
+]
+instance_group [
+  {
+    kind: KIND_CPU
+  }
+]
+
+parameters {
+  key: "conf_threshold"
+  value: { string_value: "0.25" }
+}
+parameters {
+  key: "iou_threshold"
+  value: { string_value: "0.45" }
+}
+parameters {
+  key: "track_classes"
+  value: { string_value: "[0, 1, 2, 3, 4, 5]" }
+}

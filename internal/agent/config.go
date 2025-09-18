@@ -25,6 +25,13 @@ type S3Config struct {
 	Region   string `json:"region,omitempty"`
 }
 
+func (s3 *S3Config) UrlPrefix() string {
+	if s3.UseSSL {
+		return fmt.Sprintf("https://%s/%s", s3.Endpoint, s3.Bucket)
+	}
+	return fmt.Sprintf("http://%s/%s", s3.Endpoint, s3.Bucket)
+}
+
 type Config struct {
 	LuminaServerAddr string       `yaml:"luminaServerAddr"`
 	WorkDir          string       `yaml:"workDir"`
@@ -47,7 +54,7 @@ func (c Config) JobDir() string {
 
 func DefaultConfig() *Config {
 	return &Config{
-		LuminaServerAddr: "localhost:8080",
+		LuminaServerAddr: "http://localhost:8080",
 		WorkDir:          "./agent_dir",
 		Triton: TritonConfig{
 			ServerAddr:   "localhost:8001",

@@ -1,0 +1,36 @@
+name: "yolov8s"
+platform: "tensorrt_plan"
+max_batch_size: 4
+input [
+  {
+    name: "images"
+    data_type: TYPE_FP32
+    dims: [ 3, 640, 640 ]
+  }
+]
+output [
+  {
+    name: "output0"
+    data_type: TYPE_FP32
+    dims: [ -1, -1 ]
+  }
+]
+instance_group [
+  {
+    kind: KIND_GPU
+    gpus: [ 1 ]
+  }
+]
+# TensorRT optimization configuration
+#optimization {
+#  execution_accelerators {
+#    gpu_execution_accelerator : [ {
+#      name : "tensorrt"
+#      parameters { key: "precision_mode" value: "INT8" }
+#      parameters { key: "max_workspace_size_bytes" value: "1073741824" }
+#    }]
+#  }
+#}
+dynamic_batching {
+  max_queue_delay_microseconds: 20
+}

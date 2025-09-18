@@ -16,6 +16,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
+	"lumina/internal/agent/exector"
 	"lumina/internal/dao"
 	"lumina/internal/model"
 	"lumina/internal/utils"
@@ -50,6 +51,8 @@ func (a *Agent) fetchJobsFromServer(info *AgentInfo, lastFetchTs int64) (*dao.Ge
 	if resp.StatusCode == http.StatusNotModified {
 		a.logger.Debug("no new jobs")
 		return nil, nil
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http request failed, status code: %d", resp.StatusCode)
 	}
 
 	var respBody dao.GetJobListResp
@@ -138,7 +141,7 @@ func (a *Agent) syncJobsFromServer() error {
 	return nil
 }
 
-func (a *Agent) syncJobsFromMedadata(reclaimCh chan string) error {
+func (a *Agent) syncJobsFromMedadata() error {
 	jobs, err := a.db.GetJobs()
 	if err != nil {
 		return err
@@ -167,7 +170,7 @@ func (a *Agent) syncJobsFromMedadata(reclaimCh chan string) error {
 		}
 		if _, ok := a.executors[job.Uuid]; !ok {
 			a.logger.Infof("job %s created, start the executor", job.Uuid)
-			newExector, err := NewDetector(a.tritonCli, a.conf.JobDir(), a.ctx, job)
+			newExector, err := a.newExector(job)
 			if err != nil {
 				a.logger.WithError(err).Errorf("create job %s executor failed", job.Uuid)
 				continue
@@ -176,15 +179,22 @@ func (a *Agent) syncJobsFromMedadata(reclaimCh chan string) error {
 				a.logger.WithError(err).Errorf("start job %s executor failed", job.Uuid)
 			} else {
 				a.executors[job.Uuid] = newExector
-				go func() {
-					<-newExector.Done()
-					reclaimCh <- job.Uuid
-				}()
 			}
 		}
 	}
 
 	return nil
+}
+
+func (a *Agent) newExector(job *dao.JobSpec) (exector.Executor, error) {
+	switch job.Kind {
+	case model.JobKindDetect:
+		return exector.NewDetector(a.tritonCli, a.conf.JobDir(), a.ctx, job)
+	case model.JobKindVideoSegment:
+		return exector.NewVideoSegmentor(a.conf.JobDir(), a.ctx, job)
+	default:
+		return nil, fmt.Errorf("unknown job kind %d", job.Kind)
+	}
 }
 
 func (a *Agent) uploadRoutine() {

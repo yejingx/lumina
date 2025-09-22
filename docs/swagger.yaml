@@ -1,4 +1,77 @@
 definitions:
+  dao.AccessTokenSpec:
+    properties:
+      accessToken:
+        type: string
+      createTime:
+        type: string
+      deviceUuid:
+        type: string
+      expireTime:
+        type: string
+      id:
+        type: integer
+    required:
+    - accessToken
+    type: object
+  dao.CreateAccessTokenRequest:
+    properties:
+      expireTime:
+        type: string
+    type: object
+  dao.CreateAccessTokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  dao.CreateJobRequest:
+    properties:
+      detect:
+        $ref: '#/definitions/dao.DetectOptions'
+      input:
+        type: string
+      kind:
+        $ref: '#/definitions/model.JobKind'
+      query:
+        type: string
+      videoSegment:
+        $ref: '#/definitions/dao.VideoSegmentOptions'
+      workflowId:
+        type: integer
+    required:
+    - input
+    - kind
+    type: object
+  dao.CreateJobResponse:
+    properties:
+      uuid:
+        type: string
+    type: object
+  dao.CreateMessageRequest:
+    properties:
+      detectBoxes:
+        items:
+          $ref: '#/definitions/dao.DetectionBox'
+        type: array
+      imagePath:
+        type: string
+      jobId:
+        type: integer
+      timestamp:
+        type: integer
+      videoPath:
+        type: string
+      workflowResp:
+        $ref: '#/definitions/dao.WorkflowResp'
+    required:
+    - jobId
+    - timestamp
+    type: object
+  dao.CreateMessageResponse:
+    properties:
+      id:
+        type: integer
+    type: object
   dao.CreateUserRequest:
     properties:
       departmentId:
@@ -28,6 +101,143 @@ definitions:
         description: 用户ID
         type: integer
     type: object
+  dao.CreateWorkflowRequest:
+    properties:
+      endpoint:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+      timeout:
+        maximum: 3000
+        minimum: 1
+        type: integer
+    required:
+    - endpoint
+    - key
+    - name
+    type: object
+  dao.CreateWorkflowResponse:
+    properties:
+      id:
+        type: integer
+      uuid:
+        type: string
+    type: object
+  dao.DetectOptions:
+    properties:
+      confThreshold:
+        type: number
+      interval:
+        type: integer
+      iouThreshold:
+        type: number
+      labels:
+        type: string
+      modelName:
+        type: string
+    required:
+    - modelName
+    type: object
+  dao.DetectionBox:
+    properties:
+      classId:
+        type: integer
+      confidence:
+        type: number
+      label:
+        type: string
+      x1:
+        type: integer
+      x2:
+        type: integer
+      y1:
+        type: integer
+      y2:
+        type: integer
+    type: object
+  dao.DeviceSpec:
+    properties:
+      id:
+        type: integer
+      lastPingTime:
+        type: string
+      registerTime:
+        type: string
+      token:
+        type: string
+      uuid:
+        type: string
+    type: object
+  dao.JobSpec:
+    properties:
+      createTime:
+        type: string
+      detect:
+        $ref: '#/definitions/dao.DetectOptions'
+      device:
+        $ref: '#/definitions/dao.DeviceSpec'
+      input:
+        type: string
+      kind:
+        $ref: '#/definitions/model.JobKind'
+      query:
+        type: string
+      status:
+        $ref: '#/definitions/model.JobStatus'
+      updateTime:
+        type: string
+      uuid:
+        type: string
+      videoSegment:
+        $ref: '#/definitions/dao.VideoSegmentOptions'
+      workflowId:
+        type: integer
+    required:
+    - createTime
+    - input
+    - kind
+    - status
+    - updateTime
+    - uuid
+    type: object
+  dao.ListAccessTokenResponse:
+    properties:
+      accessTokens:
+        items:
+          $ref: '#/definitions/dao.AccessTokenSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListDeviceResponse:
+    properties:
+      devices:
+        items:
+          $ref: '#/definitions/dao.DeviceSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListJobsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.JobSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListMessagesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.MessageSpec'
+        type: array
+      total:
+        type: integer
+    type: object
   dao.ListUsersResponse:
     properties:
       items:
@@ -38,6 +248,15 @@ definitions:
       total:
         description: 用户总数
         type: integer
+    type: object
+  dao.ListWorkflowResponse:
+    properties:
+      total:
+        type: integer
+      workflows:
+        items:
+          $ref: '#/definitions/dao.WorkflowSpec'
+        type: array
     type: object
   dao.LoginRequest:
     properties:
@@ -59,6 +278,71 @@ definitions:
       user:
         $ref: '#/definitions/dao.UserSpec'
     type: object
+  dao.MessageSpec:
+    properties:
+      createTime:
+        type: string
+      detectBoxes:
+        items:
+          $ref: '#/definitions/dao.DetectionBox'
+        type: array
+      id:
+        type: integer
+      imagePath:
+        type: string
+      jobId:
+        type: integer
+      timestamp:
+        type: string
+      videoPath:
+        type: string
+      workflowResp:
+        $ref: '#/definitions/dao.WorkflowResp'
+    type: object
+  dao.RegisterRequest:
+    properties:
+      accessToken:
+        type: string
+      uuid:
+        type: string
+    required:
+    - accessToken
+    type: object
+  dao.RegisterResponse:
+    properties:
+      s3AccessKeyID:
+        type: string
+      s3SecretAccessKey:
+        type: string
+      token:
+        type: string
+      uuid:
+        type: string
+    type: object
+  dao.UpdateJobRequest:
+    properties:
+      detect:
+        $ref: '#/definitions/dao.DetectOptions'
+      input:
+        type: string
+      query:
+        type: string
+      videoSegment:
+        $ref: '#/definitions/dao.VideoSegmentOptions'
+      workflowId:
+        type: integer
+    type: object
+  dao.UpdateWorkflowRequest:
+    properties:
+      endpoint:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+      timeout:
+        type: integer
+    type: object
   dao.UserSpec:
     properties:
       createdTime:
@@ -76,6 +360,57 @@ definitions:
     - nickname
     - username
     type: object
+  dao.VideoSegmentOptions:
+    properties:
+      interval:
+        type: integer
+    type: object
+  dao.WorkflowResp:
+    properties:
+      answer:
+        type: string
+    type: object
+  dao.WorkflowSpec:
+    properties:
+      createTime:
+        type: string
+      endpoint:
+        type: string
+      id:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+      timeout:
+        maximum: 300
+        minimum: 1
+        type: integer
+      uuid:
+        type: string
+    required:
+    - endpoint
+    - key
+    - name
+    - timeout
+    - uuid
+    type: object
+  model.JobKind:
+    enum:
+    - detect
+    - video_segment
+    type: string
+    x-enum-varnames:
+    - JobKindDetect
+    - JobKindVideoSegment
+  model.JobStatus:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - JobStatusStopped
+    - JobStatusRunning
   server.ErrorResponse:
     properties:
       error:
@@ -85,6 +420,140 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/v1/access-token:
+    get:
+      consumes:
+      - application/json
+      description: 列出访问令牌
+      parameters:
+      - description: 分页起始位置
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: 分页每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 列出成功
+          schema:
+            $ref: '#/definitions/dao.ListAccessTokenResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 列出访问令牌
+      tags:
+      - 设备
+    post:
+      consumes:
+      - application/json
+      description: 创建访问令牌
+      parameters:
+      - description: 创建访问令牌请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateAccessTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/dao.CreateAccessTokenResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 创建访问令牌
+      tags:
+      - 设备
+  /api/v1/access-token/{token_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除访问令牌
+      parameters:
+      - description: 访问令牌ID
+        in: path
+        name: token_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除访问令牌
+      tags:
+      - 设备
+    get:
+      consumes:
+      - application/json
+      description: 获取访问令牌
+      parameters:
+      - description: 访问令牌ID
+        in: path
+        name: token_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.AccessTokenSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取访问令牌
+      tags:
+      - 设备
   /api/v1/admin/user/{user_id}:
     delete:
       description: 删除指定的用户
@@ -161,6 +630,332 @@ paths:
       summary: 创建用户
       tags:
       - 用户管理
+  /api/v1/agent/register:
+    post:
+      consumes:
+      - application/json
+      description: 注册设备
+      parameters:
+      - description: 注册请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            $ref: '#/definitions/dao.RegisterResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "409":
+          description: 冲突
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 注册设备
+      tags:
+      - 设备
+  /api/v1/agent/unregister:
+    post:
+      consumes:
+      - application/json
+      description: 注销设备
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注销成功
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 注销设备
+      tags:
+      - 设备
+  /api/v1/device:
+    get:
+      consumes:
+      - application/json
+      description: 列出设备
+      parameters:
+      - description: 分页起始位置
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: 分页每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 列出成功
+          schema:
+            $ref: '#/definitions/dao.ListDeviceResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 列出设备
+      tags:
+      - 设备
+  /api/v1/device/{device_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除设备
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除设备
+      tags:
+      - 设备
+    get:
+      consumes:
+      - application/json
+      description: 获取设备
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.DeviceSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取设备
+      tags:
+      - 设备
+  /api/v1/job:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取任务列表
+      parameters:
+      - default: 0
+        description: 起始位置
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListJobsResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取任务列表
+      tags:
+      - 任务
+    post:
+      consumes:
+      - application/json
+      description: 创建任务
+      parameters:
+      - description: 创建任务请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/dao.CreateJobResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 创建任务
+      tags:
+      - 任务
+  /api/v1/job/{job_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据job_id删除任务
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除任务
+      tags:
+      - 任务
+    get:
+      consumes:
+      - application/json
+      description: 根据job_id获取任务详情
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.JobSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取任务
+      tags:
+      - 任务
+    put:
+      consumes:
+      - application/json
+      description: 根据job_id更新任务信息
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      - description: 更新任务请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.UpdateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 更新任务
+      tags:
+      - 任务
   /api/v1/login:
     post:
       consumes:
@@ -196,6 +991,141 @@ paths:
       summary: 用户登出
       tags:
       - 用户
+  /api/v1/message:
+    get:
+      consumes:
+      - application/json
+      description: 根据jobId分页获取消息列表
+      parameters:
+      - description: 任务ID
+        in: query
+        name: jobId
+        required: true
+        type: integer
+      - default: 0
+        description: 起始位置
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListMessagesResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取消息列表
+      tags:
+      - 消息
+    post:
+      consumes:
+      - application/json
+      description: 创建消息
+      parameters:
+      - description: 创建消息请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/dao.CreateMessageResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 创建消息
+      tags:
+      - 消息
+  /api/v1/message/{message_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据message_id删除消息
+      parameters:
+      - description: 消息message_id
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 消息不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除消息
+      tags:
+      - 消息
+    get:
+      consumes:
+      - application/json
+      description: 根据message_id获取消息详情
+      parameters:
+      - description: 消息message_id
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.MessageSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 消息不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取消息
+      tags:
+      - 消息
   /api/v1/settings/profile:
     get:
       consumes:
@@ -211,4 +1141,182 @@ paths:
       summary: 获取用户信息
       tags:
       - 用户管理
+  /api/v1/workflow:
+    get:
+      consumes:
+      - application/json
+      description: 列出工作流
+      parameters:
+      - description: 分页起始位置
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: 分页每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 列出成功
+          schema:
+            $ref: '#/definitions/dao.ListWorkflowResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 列出工作流
+      tags:
+      - 工作流
+    post:
+      consumes:
+      - application/json
+      description: 创建工作流
+      parameters:
+      - description: 创建工作流请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateWorkflowRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/dao.CreateWorkflowResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 创建工作流
+      tags:
+      - 工作流
+  /api/v1/workflow/{workflow_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除工作流
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: workflow_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除工作流
+      tags:
+      - 工作流
+    get:
+      consumes:
+      - application/json
+      description: 获取工作流
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: workflow_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.WorkflowSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 工作流不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取工作流
+      tags:
+      - 工作流
+    put:
+      consumes:
+      - application/json
+      description: 更新工作流
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: workflow_id
+        required: true
+        type: integer
+      - description: 更新工作流请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.UpdateWorkflowRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 工作流不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 更新工作流
+      tags:
+      - 工作流
 swagger: "2.0"

@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"lumina/internal/dao"
+	"lumina/internal/model"
 	"lumina/pkg/log"
 )
 
@@ -46,7 +47,7 @@ func NewConsumer(conf *Config) (*Consumer, error) {
 		cancel:   cancel,
 		consumer: consumer,
 		logger:   logger,
-		dify:     NewDify(ctx, conf.Dify),
+		dify:     NewDify(ctx),
 	}
 
 	consumer.AddHandler(c)
@@ -58,7 +59,7 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 	c.logger.Debugf("Received NSQ message: %s", string(message.Body))
 	message.DisableAutoResponse()
 
-	var msg dao.Message
+	var msg dao.AgentMessage
 	if err := json.Unmarshal(message.Body, &msg); err != nil {
 		c.logger.WithError(err).Error("Failed to unmarshal NSQ message")
 		return err
@@ -71,12 +72,39 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 		"boxCount":  len(msg.DetectBoxes),
 	}).Info("Processing detection result message")
 
-	resp, err := c.dify.ChatCompletion(c.conf.S3.UrlPrefix()+msg.ImagePath, &msg, "图中有没有出现带手提包的人")
+	job, err := model.GetJobByUuid(msg.JobUuid)
+	if err != nil {
+		c.logger.WithError(err).Errorf("Failed to get job by uuid %s", msg.JobUuid)
+		return err
+	} else if job == nil {
+		message.Finish()
+		return nil
+	}
+
+	wf, err := job.Workflow()
+	if err != nil {
+		c.logger.WithError(err).Errorf("Failed to get workflow for job %s", msg.JobUuid)
+		return err
+	} else if wf == nil {
+		message.Finish()
+		return nil
+	}
+
+	resp, err := c.dify.ChatCompletion(wf, c.conf.S3.UrlPrefix()+msg.ImagePath, &msg, job.Query)
 	if err != nil {
 		c.logger.WithError(err).Errorf("Failed to call Dify API for job %s", msg.JobUuid)
 		return err
 	}
 	c.logger.Infof("DifyChatCompletion response for job %s: %s", msg.JobUuid, resp)
+
+	m := msg.ToModel(job)
+	m.WorkflowResp = &model.WorkflowResp{
+		Answer: resp,
+	}
+	if err := model.AddMessage(m); err != nil {
+		c.logger.WithError(err).Errorf("Failed to add message to DB for job %s", msg.JobUuid)
+		return err
+	}
 
 	message.Finish()
 	c.logger.Debugf("Successfully processed message for job %s", msg.JobUuid)
@@ -103,5 +131,5 @@ func (c *Consumer) Start() error {
 
 func (c *Consumer) Stop() {
 	c.cancel()
-	c.wg.Wait() // 等待所有goroutine完成
+	c.wg.Wait()
 }

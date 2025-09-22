@@ -28,7 +28,11 @@ func CreateDevice(d *Device) error {
 	return DB.Create(d).Error
 }
 
-func GetDevice(id uint) (*Device, error) {
+func DeleteDevice(id uint) error {
+	return DB.Delete(&Device{}, id).Error
+}
+
+func GetDeviceById(id int) (*Device, error) {
 	var d Device
 	err := DB.First(&d, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,12 +59,24 @@ func GetDeviceByToken(token string) (*Device, error) {
 	return &d, err
 }
 
+func ListDevices(start, limit int) ([]Device, int64, error) {
+	var devices []Device
+	var total int64
+	if err := DB.Model(&Device{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := DB.Model(&Device{}).Offset(start).Limit(limit).Find(&devices).Error; err != nil {
+		return nil, 0, err
+	}
+	return devices, total, nil
+}
+
 type AccessToken struct {
-	Id         int       `gorm:"primaryKey"`
-	Token      string    `gorm:"type:char(96);unique"`
-	CreateTime time.Time `gorm:"datetime;autoCreateTime"`
-	ExpireTime time.Time `gorm:"datetime;autoCreateTime"`
-	DeviceUuid string    `gorm:"type:char(96);index"`
+	Id          int       `gorm:"primaryKey"`
+	AccessToken string    `gorm:"type:char(96);unique"`
+	CreateTime  time.Time `gorm:"datetime;autoCreateTime"`
+	ExpireTime  time.Time `gorm:"datetime;autoCreateTime"`
+	DeviceUuid  string    `gorm:"type:char(96);index"`
 }
 
 func (t *AccessToken) IsExpired() bool {
@@ -108,7 +124,7 @@ func DeleteAccessToken(id uint) error {
 	return DB.Delete(&AccessToken{}, id).Error
 }
 
-func GetAccessToken(id uint) (*AccessToken, error) {
+func GetAccessToken(id int) (*AccessToken, error) {
 	var t AccessToken
 	err := DB.First(&t, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -124,4 +140,16 @@ func GetAccessTokenByToken(token string) (*AccessToken, error) {
 		return nil, nil
 	}
 	return &t, err
+}
+
+func ListAccessToken(start, limit int) ([]AccessToken, int64, error) {
+	var accessTokens []AccessToken
+	var total int64
+	if err := DB.Model(&AccessToken{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := DB.Model(&AccessToken{}).Offset(start).Limit(limit).Find(&accessTokens).Error; err != nil {
+		return nil, 0, err
+	}
+	return accessTokens, total, nil
 }

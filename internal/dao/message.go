@@ -1,5 +1,11 @@
 package dao
 
+import (
+	"time"
+
+	"lumina/internal/model"
+)
+
 type DetectionBox struct {
 	X1         int     `json:"x1,omitempty"`
 	Y1         int     `json:"y1,omitempty"`
@@ -10,6 +16,18 @@ type DetectionBox struct {
 	Label      string  `json:"label,omitempty"`
 }
 
+func (b DetectionBox) ToModel() *model.DetectionBox {
+	return &model.DetectionBox{
+		X1:         b.X1,
+		Y1:         b.Y1,
+		X2:         b.X2,
+		Y2:         b.Y2,
+		Confidence: b.Confidence,
+		ClassId:    b.ClassId,
+		Label:      b.Label,
+	}
+}
+
 type DetectionResult struct {
 	JobId     string          `json:"jobId"`
 	Timestamp int64           `json:"timestamp"`
@@ -18,10 +36,129 @@ type DetectionResult struct {
 	Boxes     []*DetectionBox `json:"boxes,omitempty"`
 }
 
-type Message struct {
+type AgentMessage struct {
 	JobUuid     string          `json:"jobUuid"`
 	Timestamp   int64           `json:"timestamp"`
 	ImagePath   string          `json:"imagePath,omitempty"`
 	DetectBoxes []*DetectionBox `json:"detectBoxes,omitempty"`
 	VideoPath   string          `json:"videoPath,omitempty"`
+}
+
+func (m AgentMessage) ToModel(job *model.Job) *model.Message {
+	mdl := &model.Message{
+		JobId:     job.Id,
+		Timestamp: time.Unix(m.Timestamp, 0),
+		ImagePath: m.ImagePath,
+		VideoPath: m.VideoPath,
+	}
+	if m.DetectBoxes != nil {
+		mdl.DetectBoxes = make([]*model.DetectionBox, len(m.DetectBoxes))
+		for i, box := range m.DetectBoxes {
+			mdl.DetectBoxes[i] = box.ToModel()
+		}
+	}
+	return mdl
+}
+
+type WorkflowResp struct {
+	Answer string `json:"answer,omitempty"`
+}
+
+func (w WorkflowResp) ToModel() *model.WorkflowResp {
+	return &model.WorkflowResp{
+		Answer: w.Answer,
+	}
+}
+
+type MessageSpec struct {
+	Id           int             `json:"id"`
+	JobId        int             `json:"jobId"`
+	Timestamp    string          `json:"timestamp"`
+	ImagePath    string          `json:"imagePath,omitempty"`
+	DetectBoxes  []*DetectionBox `json:"detectBoxes,omitempty"`
+	VideoPath    string          `json:"videoPath,omitempty"`
+	CreateTime   string          `json:"createTime"`
+	WorkflowResp *WorkflowResp   `json:"workflowResp,omitempty"`
+}
+
+func FromMessageModel(msg *model.Message) *MessageSpec {
+	if msg == nil {
+		return nil
+	}
+	m := &MessageSpec{}
+	m.Id = msg.Id
+	m.JobId = msg.JobId
+	m.Timestamp = msg.Timestamp.Format(time.RFC3339)
+	m.ImagePath = msg.ImagePath
+	m.VideoPath = msg.VideoPath
+	m.CreateTime = msg.CreateTime.Format(time.RFC3339)
+
+	if msg.DetectBoxes != nil {
+		m.DetectBoxes = make([]*DetectionBox, len(msg.DetectBoxes))
+		for i, box := range msg.DetectBoxes {
+			m.DetectBoxes[i] = &DetectionBox{
+				X1:         box.X1,
+				Y1:         box.Y1,
+				X2:         box.X2,
+				Y2:         box.Y2,
+				Confidence: box.Confidence,
+				ClassId:    box.ClassId,
+				Label:      box.Label,
+			}
+		}
+	}
+
+	if msg.WorkflowResp != nil {
+		m.WorkflowResp = &WorkflowResp{
+			Answer: msg.WorkflowResp.Answer,
+		}
+	}
+
+	return m
+}
+
+type CreateMessageRequest struct {
+	JobId        int             `json:"jobId" binding:"required"`
+	Timestamp    int64           `json:"timestamp" binding:"required"`
+	ImagePath    string          `json:"imagePath,omitempty"`
+	DetectBoxes  []*DetectionBox `json:"detectBoxes,omitempty"`
+	VideoPath    string          `json:"videoPath,omitempty"`
+	WorkflowResp *WorkflowResp   `json:"workflowResp,omitempty"`
+}
+
+func (req *CreateMessageRequest) ToModel() *model.Message {
+	msg := &model.Message{
+		JobId:     req.JobId,
+		Timestamp: time.Unix(req.Timestamp, 0),
+		ImagePath: req.ImagePath,
+		VideoPath: req.VideoPath,
+	}
+
+	if req.DetectBoxes != nil {
+		msg.DetectBoxes = make([]*model.DetectionBox, len(req.DetectBoxes))
+		for i, box := range req.DetectBoxes {
+			msg.DetectBoxes[i] = box.ToModel()
+		}
+	}
+
+	if req.WorkflowResp != nil {
+		msg.WorkflowResp = req.WorkflowResp.ToModel()
+	}
+
+	return msg
+}
+
+type CreateMessageResponse struct {
+	Id int `json:"id"`
+}
+
+type ListMessagesRequest struct {
+	JobId int `json:"jobId" binding:"required"`
+	Start int `json:"start" binding:"required,min=0"`
+	Limit int `json:"limit" binding:"required,min=1,max=50"`
+}
+
+type ListMessagesResponse struct {
+	Items []MessageSpec `json:"items"`
+	Total int64         `json:"total"`
 }

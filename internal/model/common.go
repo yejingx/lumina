@@ -42,6 +42,27 @@ func AutoMigrate(db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	err = db.AutoMigrate(&Job{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&Device{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&Workflow{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&Message{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&AccessToken{})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -3,7 +3,6 @@ package consumer
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -27,24 +26,9 @@ func (s3 *S3Config) UrlPrefix() string {
 	return fmt.Sprintf("http://%s/%s", s3.Endpoint, s3.Bucket)
 }
 
-type VLMConfig struct {
-	APIKey  string        `yaml:"apiKey"`
-	BaseURL string        `yaml:"baseURL"`
-	Model   string        `yaml:"model"`
-	Timeout time.Duration `yaml:"timeout"` // 超时时间(秒)
-}
-
-type DifyConfig struct {
-	APIKey  string        `yaml:"apiKey"`
-	BaseURL string        `yaml:"baseURL"`
-	Timeout time.Duration `yaml:"timeout"`
-}
-
 type Config struct {
-	NSQ  NSQConfig  `yaml:"nsq"`
-	S3   S3Config   `yaml:"s3"`
-	VLM  VLMConfig  `yaml:"vlm"`
-	Dify DifyConfig `yaml:"dify"`
+	NSQ NSQConfig `yaml:"nsq"`
+	S3  S3Config  `yaml:"s3"`
 }
 
 func DefaultConfig() *Config {
@@ -58,17 +42,6 @@ func DefaultConfig() *Config {
 			Endpoint: "localhost:9000",
 			UseSSL:   false,
 			Region:   "us-east-1",
-		},
-		VLM: VLMConfig{
-			APIKey:  "",
-			BaseURL: "https://api.openai.com/v1",
-			Model:   "gpt-4-vision-preview",
-			Timeout: 30 * time.Second,
-		},
-		Dify: DifyConfig{
-			APIKey:  "",
-			BaseURL: "https://api.dify.cn/v1",
-			Timeout: 30 * time.Second,
 		},
 	}
 }

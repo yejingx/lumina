@@ -420,7 +420,7 @@ func (e *Detector) listAndUpload() error {
 			return nil
 		}
 
-		msg := &dao.Message{
+		msg := &dao.AgentMessage{
 			JobUuid:     result.JobId,
 			Timestamp:   ts.UnixNano(),
 			ImagePath:   minioPath,

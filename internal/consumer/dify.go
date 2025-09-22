@@ -7,28 +7,26 @@ import (
 	"fmt"
 	"io"
 	"lumina/internal/dao"
+	"lumina/internal/model"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Dify struct {
 	ctx     context.Context
-	conf    DifyConfig
 	httpCli *http.Client
 }
 
-func NewDify(ctx context.Context, conf DifyConfig) *Dify {
-	httpCli := &http.Client{
-		Timeout: conf.Timeout,
-	}
+func NewDify(ctx context.Context) *Dify {
+	httpCli := &http.Client{}
 	return &Dify{
 		ctx:     ctx,
-		conf:    conf,
 		httpCli: httpCli,
 	}
 }
 
-func (v *Dify) ChatCompletion(imageURL string, message *dao.Message, query string) (string, error) {
+func (v *Dify) ChatCompletion(wf *model.Workflow, imageURL string, message *dao.AgentMessage, query string) (string, error) {
 	// 构建检测结果的文本描述
 	var detectionText strings.Builder
 	if message != nil && len(message.DetectBoxes) > 0 {
@@ -60,14 +58,16 @@ func (v *Dify) ChatCompletion(imageURL string, message *dao.Message, query strin
 		return "", fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(v.ctx, "POST", v.conf.BaseURL+"/chat-messages", bytes.NewBuffer(jsonData))
+	ctx, cancel := context.WithTimeout(v.ctx, time.Duration(wf.Timeout)*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "POST", wf.Endpoint+"/chat-messages", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if v.conf.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+v.conf.APIKey)
+	if wf.Key != "" {
+		req.Header.Set("Authorization", "Bearer "+wf.Key)
 	}
 
 	resp, err := v.httpCli.Do(req)

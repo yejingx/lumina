@@ -16,7 +16,7 @@ import (
 
 const fetchJobsPath = "/api/v1/agent/%s/jobs"
 
-func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64) (*dao.GetJobListResp, error) {
+func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64) (*dao.ListJobsResponse, error) {
 	a.logger.Debugf("fetch jobs, lastFetch: %s", time.Unix(lastFetchTs, 0).Format(time.RFC1123))
 
 	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr+fetchJobsPath, *info.Uuid))
@@ -47,7 +47,7 @@ func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64)
 		return nil, fmt.Errorf("http request failed, status code: %d", resp.StatusCode)
 	}
 
-	var respBody dao.GetJobListResp
+	var respBody dao.ListJobsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
 		return nil, err
 	}

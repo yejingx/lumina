@@ -221,7 +221,7 @@ func (e *VideoSegmentor) listAndUpload() error {
 		cancel()
 
 		// 创建消息并发送到 NSQ
-		msg := &dao.Message{
+		msg := &dao.AgentMessage{
 			JobUuid:   e.job.Uuid,
 			Timestamp: ts.UnixNano(),
 			VideoPath: minioPath,

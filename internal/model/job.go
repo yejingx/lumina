@@ -9,22 +9,11 @@ const (
 	JobStatusRunning
 )
 
-type JobKind int
-
-func (k JobKind) String() string {
-	switch k {
-	case JobKindDetect:
-		return "detect"
-	case JobKindVideoSegment:
-		return "video_segment"
-	default:
-		return "unknown"
-	}
-}
+type JobKind string
 
 const (
-	JobKindDetect JobKind = iota
-	JobKindVideoSegment
+	JobKindDetect JobKind = "detect"
+	JobKindVideoSegment JobKind = "video_segment"
 )
 
 type DetectOptions struct {

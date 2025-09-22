@@ -1,30 +1,22 @@
 package agent
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-
 	"lumina/internal/agent/exector"
+	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
 	"lumina/internal/model"
-	"lumina/internal/utils"
 )
 
 const fetchJobsPath = "/api/v1/agent/%s/jobs"
 
-func (a *Agent) fetchJobsFromServer(info *AgentInfo, lastFetchTs int64) (*dao.GetJobListResp, error) {
+func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64) (*dao.GetJobListResp, error) {
 	a.logger.Debugf("fetch jobs, lastFetch: %s", time.Unix(lastFetchTs, 0).Format(time.RFC1123))
 
 	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr+fetchJobsPath, *info.Uuid))
@@ -189,147 +181,10 @@ func (a *Agent) syncJobsFromMedadata() error {
 func (a *Agent) newExector(job *dao.JobSpec) (exector.Executor, error) {
 	switch job.Kind {
 	case model.JobKindDetect:
-		return exector.NewDetector(a.tritonCli, a.conf.JobDir(), a.ctx, job)
+		return exector.NewDetector(a.conf, a.agentInfo, a.ctx, a.minioCli, a.nsqProducer, job)
 	case model.JobKindVideoSegment:
-		return exector.NewVideoSegmentor(a.conf.JobDir(), a.ctx, job)
+		return exector.NewVideoSegmentor(a.conf, a.agentInfo, a.ctx, a.minioCli, a.nsqProducer, job)
 	default:
-		return nil, fmt.Errorf("unknown job kind %d", job.Kind)
+		return nil, fmt.Errorf("unknown job kind %s", job.Kind)
 	}
-}
-
-func (a *Agent) uploadRoutine() {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	var minioCli *minio.Client
-	var info *AgentInfo
-	lastInfoUpdateTime := time.Now()
-
-	for {
-		if minioCli == nil || time.Since(lastInfoUpdateTime) > time.Hour {
-			var err error
-			info, err = a.db.GetAgentInfo()
-			if err != nil {
-				a.logger.WithError(err).Errorf("get agent info failed")
-				continue
-			} else if info == nil {
-				continue
-			}
-
-			region := a.conf.S3.Region
-			if region == "" {
-				region = "us-east-1"
-			}
-			minioCli, err = minio.New(a.conf.S3.Endpoint, &minio.Options{
-				Creds:  credentials.NewStaticV4(*info.S3AccessKeyID, *info.S3SecretAccessKey, ""),
-				Secure: a.conf.S3.UseSSL,
-				Region: region,
-			})
-			if err != nil {
-				a.logger.WithError(err).Errorf("create minio client failed")
-				continue
-			}
-			lastInfoUpdateTime = time.Now()
-		}
-
-		if err := a.listAndUpload(minioCli, info); err != nil {
-			a.logger.WithError(err).Errorf("list and upload failed")
-		}
-
-		select {
-		case <-a.ctx.Done():
-			return
-		case <-ticker.C:
-		}
-	}
-}
-
-func (a *Agent) listAndUpload(minioCli *minio.Client, info *AgentInfo) error {
-	jobDir := a.conf.JobDir()
-	entries, err := os.ReadDir(jobDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			a.logger.Debug("job directory does not exist")
-			return nil
-		}
-		return fmt.Errorf("read job directory failed: %w", err)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		jobID := entry.Name()
-		jobPath := filepath.Join(jobDir, jobID)
-
-		err := filepath.WalkDir(jobPath, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if d.IsDir() || !strings.HasSuffix(strings.ToLower(d.Name()), ".json") {
-				return nil
-			}
-
-			jsonData, err := os.ReadFile(path)
-			if err != nil {
-				a.logger.WithError(err).Errorf("read JSON file %s failed", path)
-				return nil
-			}
-
-			var result dao.DetectionResult
-			if err := json.Unmarshal(jsonData, &result); err != nil {
-				a.logger.WithError(err).Errorf("unmarshal JSON file %s failed", path)
-				return nil
-			}
-
-			fileName := strings.TrimSuffix(d.Name(), ".json")
-			imgPath := filepath.Join(jobPath, fileName+".jpg")
-
-			var ts time.Time
-			if result.Timestamp != 0 {
-				ts = time.Unix(result.Timestamp/1000000000, result.Timestamp%1000000000)
-			} else {
-				if jsonInfo, err := d.Info(); err == nil {
-					ts = jsonInfo.ModTime()
-				} else {
-					ts = time.Now()
-				}
-			}
-			minioPath := fmt.Sprintf("/%s/%04d/%02d/%02d/%s/%s.jpg",
-				*info.Uuid, ts.Year(), ts.Month(), ts.Day(), result.JobId, fileName)
-
-			ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-			defer cancel()
-			if err := utils.UploadImageToMinio(ctx, minioCli, a.conf.S3.Bucket, imgPath, minioPath); err != nil {
-				a.logger.WithError(err).Errorf("upload image %s to minio failed", imgPath)
-				return nil
-			}
-
-			msg := &dao.Message{
-				JobUuid:     result.JobId,
-				Timestamp:   ts.UnixNano(),
-				ImagePath:   minioPath,
-				DetectBoxes: result.Boxes,
-			}
-			msgData, _ := json.Marshal(msg)
-			if err := a.nsqProducer.Publish(a.conf.NSQ.Topic, msgData); err != nil {
-				a.logger.WithError(err).Errorf("publish to NSQ failed for %s", path)
-				return nil
-			}
-
-			os.Remove(path)
-			os.Remove(imgPath)
-
-			a.logger.Infof("successfully processed %s: uploaded image to %s and sent to NSQ", path, minioPath)
-			return nil
-		})
-		if err != nil {
-			a.logger.WithError(err).Errorf("process job directory %s failed", jobPath)
-			continue
-		}
-	}
-
-	return nil
 }

@@ -2,47 +2,65 @@ package exector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
+	"lumina/internal/agent/config"
+	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
 
 type VideoSegmentor struct {
-	ctx     context.Context
-	cancel  context.CancelFunc
-	wg      *sync.WaitGroup
-	job     *dao.JobSpec
-	logger  *logrus.Entry
-	status  ExectorStatus
-	workDir string
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          *sync.WaitGroup
+	job         *dao.JobSpec
+	logger      *logrus.Entry
+	status      ExectorStatus
+	workDir     string
+	conf        *config.Config
+	nsqProducer *nsq.Producer
+	minioCli    *minio.Client
+	agentInfo   *metadata.AgentInfo
 }
 
-func NewVideoSegmentor(workDir string, parentCtx context.Context, job *dao.JobSpec) (*VideoSegmentor, error) {
+func NewVideoSegmentor(conf *config.Config, agentInfo *metadata.AgentInfo, parentCtx context.Context,
+	minioCli *minio.Client, nsqProducer *nsq.Producer, job *dao.JobSpec) (*VideoSegmentor, error) {
 	if job.VideoSegment == nil {
 		return nil, fmt.Errorf("job %s video segment is nil", job.Uuid)
 	}
-
-	workDir = path.Join(workDir, job.Uuid)
+	workDir := path.Join(conf.JobDir(), job.Uuid)
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(parentCtx)
 	return &VideoSegmentor{
-		ctx:     ctx,
-		cancel:  cancel,
-		wg:      &sync.WaitGroup{},
-		job:     job,
-		logger:  log.GetLogger(ctx).WithField("job", job.Uuid),
-		status:  ExectorStatusStopped,
-		workDir: workDir,
+		agentInfo:   agentInfo,
+		ctx:         ctx,
+		cancel:      cancel,
+		wg:          &sync.WaitGroup{},
+		job:         job,
+		logger:      log.GetLogger(ctx).WithField("job", job.Uuid),
+		status:      ExectorStatusStopped,
+		workDir:     workDir,
+		conf:        conf,
+		nsqProducer: nsqProducer,
+		minioCli:    minioCli,
 	}, nil
 }
 
@@ -63,6 +81,13 @@ func (e *VideoSegmentor) Start() error {
 		e.runJob()
 		e.logger.Info("video segmentation job finished")
 	}()
+
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		e.uploadRoutine()
+	}()
+
 	return nil
 }
 
@@ -78,8 +103,7 @@ func (e *VideoSegmentor) runJob() {
 		interval = e.job.VideoSegment.Interval
 	}
 
-	startTs := time.Now().Format("20060102150405")
-	outputPattern := "segment_" + startTs + "_%06d.mp4"
+	outputPattern := "segment_%Y%m%d_%H%M%S.mp4"
 
 	args := []string{
 		"-i", e.job.Input, // 输入视频流
@@ -132,4 +156,89 @@ func (e *VideoSegmentor) runJob() {
 			e.status = ExectorStatusFinished
 		}
 	}
+}
+
+func (e *VideoSegmentor) uploadRoutine() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		if err := e.listAndUpload(); err != nil {
+			e.logger.WithError(err).Errorf("list and upload failed")
+		}
+
+		select {
+		case <-e.ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (e *VideoSegmentor) listAndUpload() error {
+	var files []string
+	err := filepath.WalkDir(e.workDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() || !strings.HasSuffix(strings.ToLower(d.Name()), ".mp4") {
+			return nil
+		}
+
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	sort.Strings(files)
+
+	if len(files) <= 1 {
+		return nil
+	}
+
+	// 处理除最后一个文件外的所有文件
+	for _, path := range files[:len(files)-1] {
+		filename := filepath.Base(path)
+		info, err := os.Stat(path)
+		if err != nil {
+			e.logger.WithError(err).Warnf("failed to get file info %s, skip", filename)
+			continue
+		}
+		ts := info.ModTime()
+		minioPath := fmt.Sprintf("/%s/%04d/%02d/%02d/%s/%s",
+			*e.agentInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), e.job.Uuid, filename)
+
+		// 上传到 MinIO
+		ctx, cancel := context.WithTimeout(e.ctx, 30*time.Second)
+		if err := utils.UploadFileToMinio(ctx, e.minioCli, e.conf.S3.Bucket, path, minioPath); err != nil {
+			e.logger.WithError(err).Errorf("upload video segment %s to minio failed", path)
+			cancel()
+			continue
+		}
+		cancel()
+
+		// 创建消息并发送到 NSQ
+		msg := &dao.Message{
+			JobUuid:   e.job.Uuid,
+			Timestamp: ts.UnixNano(),
+			VideoPath: minioPath,
+		}
+		msgData, _ := json.Marshal(msg)
+		if err := e.nsqProducer.Publish(e.conf.NSQ.Topic, msgData); err != nil {
+			e.logger.WithError(err).Errorf("publish to NSQ failed for %s", path)
+			continue
+		}
+
+		// 删除本地文件
+		if err := os.Remove(path); err != nil {
+			e.logger.WithError(err).Warnf("failed to remove local file %s", path)
+		}
+
+		e.logger.Infof("successfully processed %s: uploaded to %s and sent to NSQ", path, minioPath)
+	}
+
+	return nil
 }

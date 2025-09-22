@@ -8,7 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/agent"
+	"lumina/internal/agent/config"
+	"lumina/internal/agent/metadata"
 )
 
 var registerCmd = &cobra.Command{
@@ -23,7 +24,7 @@ var registerCmd = &cobra.Command{
 
 func registerAgent(agentInfoPath string) {
 	logrus.Infof("Registering agent from file: %s", agentInfoPath)
-	conf, err := agent.LoadConfig(configFile)
+	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}
@@ -34,7 +35,7 @@ func registerAgent(agentInfoPath string) {
 		return
 	}
 
-	var agentInfo agent.AgentInfo
+	var agentInfo metadata.AgentInfo
 	if err2 := json.Unmarshal(data, &agentInfo); err2 != nil {
 		logrus.WithError(err2).Fatalf("unmarshal agent info from file")
 		return
@@ -42,7 +43,7 @@ func registerAgent(agentInfoPath string) {
 	registerTime := time.Now().Format(time.RFC3339)
 	agentInfo.RegisterTime = &registerTime
 
-	metadataDB, err := agent.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
+	metadataDB, err := metadata.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
 	if err != nil {
 		logrus.WithError(err).Fatalf("new metadata db")
 		return

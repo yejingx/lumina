@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lumina/internal/agent"
+	"lumina/internal/agent/config"
 )
 
 var serveCommand = &cobra.Command{
@@ -23,7 +24,7 @@ func init() {
 }
 
 func runServe() {
-	conf, err := agent.LoadConfig(configFile)
+	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}

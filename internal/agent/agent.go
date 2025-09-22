@@ -7,36 +7,59 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Trendyol/go-triton-client/base"
-	tritonGrpc "github.com/Trendyol/go-triton-client/client/grpc"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
+	"lumina/internal/agent/config"
 	"lumina/internal/agent/exector"
+	"lumina/internal/agent/metadata"
 	"lumina/pkg/log"
 )
 
 type Agent struct {
-	conf        *Config
+	conf        *config.Config
 	ctx         context.Context
 	cancel      context.CancelFunc
 	logger      *logrus.Entry
-	db          *MetadataDB
+	db          *metadata.MetadataDB
 	httpCli     *http.Client
-	tritonCli   base.Client
 	executors   map[string]exector.Executor
+	agentInfo   *metadata.AgentInfo
 	nsqProducer *nsq.Producer
+	minioCli    *minio.Client
 }
 
-func NewAgent(conf *Config) (*Agent, error) {
+func NewAgent(conf *config.Config) (*Agent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	logger := log.GetLogger(ctx).WithField("component", "agent")
 
-	db, err := NewMetadataDB(conf.DataDir(), logger)
+	db, err := metadata.NewMetadataDB(conf.DataDir(), logger)
 	if err != nil {
 		cancel()
 		return nil, err
+	}
+
+	info, err := db.GetAgentInfo()
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("get agent info failed: %w", err)
+	}
+
+	region := conf.S3.Region
+	if region == "" {
+		region = "us-east-1"
+	}
+	minioCli, err := minio.New(conf.S3.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(*info.S3AccessKeyID, *info.S3SecretAccessKey, ""),
+		Secure: conf.S3.UseSSL,
+		Region: region,
+	})
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("create minio client failed: %w", err)
 	}
 
 	httpCli := &http.Client{
@@ -47,21 +70,6 @@ func NewAgent(conf *Config) (*Agent, error) {
 			},
 		},
 		Timeout: 15 * time.Second,
-	}
-
-	tritonCli, err := tritonGrpc.NewClient(
-		conf.Triton.ServerAddr,
-		false, // verbose logging
-		30,    // connection timeout in seconds
-		30,    // network timeout in seconds
-		false, // use SSL
-		true,  // insecure connection
-		nil,   // existing gRPC connection
-		nil,   // logger
-	)
-	if err != nil {
-		cancel()
-		return nil, err
 	}
 
 	producer, err := nsq.NewProducer(conf.NSQ.NSQDAddr, nsq.NewConfig())
@@ -77,15 +85,14 @@ func NewAgent(conf *Config) (*Agent, error) {
 		logger:      logger,
 		db:          db,
 		httpCli:     httpCli,
-		tritonCli:   tritonCli,
 		executors:   make(map[string]exector.Executor),
+		agentInfo:   info,
 		nsqProducer: producer,
+		minioCli:    minioCli,
 	}, nil
 }
 
 func (a *Agent) Start() {
-	go a.uploadRoutine()
-
 	fetchTicker := time.NewTicker(5 * time.Second)
 	syncTicker := time.NewTicker(1 * time.Second)
 	defer func() {

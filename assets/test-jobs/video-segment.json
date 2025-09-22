@@ -1,0 +1,11 @@
+{
+  "uuid": "test-job-video_segment",
+  "status": 1,
+  "kind": "video_segment",
+  "createTime": "2024-01-15T10:30:00Z",
+  "updateTime": "2024-01-15T10:35:00Z",
+  "input": "rtmp://192.168.3.27:1935/live/test1",
+  "videoSegment": {
+    "interval": 30
+  }
+}

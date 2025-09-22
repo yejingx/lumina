@@ -23,4 +23,5 @@ type Message struct {
 	Timestamp   int64           `json:"timestamp"`
 	ImagePath   string          `json:"imagePath,omitempty"`
 	DetectBoxes []*DetectionBox `json:"detectBoxes,omitempty"`
+	VideoPath   string          `json:"videoPath,omitempty"`
 }

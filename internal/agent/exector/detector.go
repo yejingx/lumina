@@ -7,50 +7,81 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Trendyol/go-triton-client/base"
-	"github.com/Trendyol/go-triton-client/client/grpc"
+	tritonGrpc "github.com/Trendyol/go-triton-client/client/grpc"
+	"github.com/minio/minio-go/v7"
+	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 
+	"lumina/internal/agent/config"
+	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
 
 type Detector struct {
-	tritonCli base.Client
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        *sync.WaitGroup
-	job       *dao.JobSpec
-	logger    *logrus.Entry
-	status    ExectorStatus
-	workDir   string
+	tritonCli   base.Client
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          *sync.WaitGroup
+	job         *dao.JobSpec
+	logger      *logrus.Entry
+	status      ExectorStatus
+	workDir     string
+	conf        *config.Config
+	nsqProducer *nsq.Producer
+	minioCli    *minio.Client
+	agentInfo   *metadata.AgentInfo
 }
 
-func NewDetector(tritonCli base.Client, workDir string, parentCtx context.Context, job *dao.JobSpec) (*Detector, error) {
+func NewDetector(conf *config.Config, agentInfo *metadata.AgentInfo, parentCtx context.Context,
+	minioCli *minio.Client, nsqProducer *nsq.Producer, job *dao.JobSpec) (*Detector, error) {
 	if job.Detect == nil {
 		return nil, fmt.Errorf("job %s detect is nil", job.Uuid)
 	}
 
-	workDir = path.Join(workDir, job.Uuid)
+	tritonCli, err := tritonGrpc.NewClient(
+		conf.Triton.ServerAddr,
+		false, // verbose logging
+		30,    // connection timeout in seconds
+		30,    // network timeout in seconds
+		false, // use ssl
+		true,  // insecure connection
+		nil,   // existing grpc connection
+		nil,   // logger
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	workDir := path.Join(conf.JobDir(), job.Uuid)
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(parentCtx)
 	return &Detector{
-		tritonCli: tritonCli,
-		ctx:       ctx,
-		cancel:    cancel,
-		wg:        &sync.WaitGroup{},
-		job:       job,
-		status:    ExectorStatusStopped,
-		logger:    log.GetLogger(ctx).WithField("job", job.Uuid),
-		workDir:   workDir,
+		tritonCli:   tritonCli,
+		ctx:         ctx,
+		cancel:      cancel,
+		wg:          &sync.WaitGroup{},
+		job:         job,
+		status:      ExectorStatusStopped,
+		logger:      log.GetLogger(ctx).WithField("job", job.Uuid),
+		workDir:     workDir,
+		conf:        conf,
+		nsqProducer: nsqProducer,
+		minioCli:    minioCli,
+		agentInfo:   agentInfo,
 	}, nil
 }
 
@@ -85,6 +116,12 @@ func (e *Detector) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to open input video: %v", err)
 	}
+
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		e.uploadRoutine()
+	}()
 
 	e.wg.Add(1)
 	go func() {
@@ -258,7 +295,7 @@ func performInference(client base.Client, frame *gocv.Mat, modelName string, lab
 
 	// Create input tensors
 	// FRAME input - image data
-	frameInput := grpc.NewInferInput("FRAME", "BYTES", []int64{int64(frame.Rows()), int64(frame.Cols()), 3}, nil)
+	frameInput := tritonGrpc.NewInferInput("FRAME", "BYTES", []int64{int64(frame.Rows()), int64(frame.Cols()), 3}, nil)
 	err := frameInput.SetData(frameBytes, true)
 	if err != nil {
 		return gocv.NewMat(), nil, fmt.Errorf("failed to set FRAME input data: %v", err)
@@ -266,7 +303,7 @@ func performInference(client base.Client, frame *gocv.Mat, modelName string, lab
 	frameInput.SetDatatype("UINT8")
 
 	outputs := []base.InferOutput{
-		grpc.NewInferOutput("DETECTIONS", map[string]any{"binary_data": false}),
+		tritonGrpc.NewInferOutput("DETECTIONS", map[string]any{"binary_data": false}),
 	}
 
 	response, err := client.Infer(
@@ -319,4 +356,86 @@ func performInference(client base.Client, frame *gocv.Mat, modelName string, lab
 	processedFrame := drawDetections(frame, boxes)
 
 	return processedFrame, boxes, nil
+}
+
+func (e *Detector) uploadRoutine() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		if err := e.listAndUpload(); err != nil {
+			e.logger.WithError(err).Errorf("list and upload failed")
+		}
+
+		select {
+		case <-e.ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (e *Detector) listAndUpload() error {
+	return filepath.WalkDir(e.workDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() || !strings.HasSuffix(strings.ToLower(d.Name()), ".json") {
+			return nil
+		}
+
+		jsonData, err := os.ReadFile(path)
+		if err != nil {
+			e.logger.WithError(err).Errorf("read JSON file %s failed", path)
+			return nil
+		}
+
+		var result dao.DetectionResult
+		if err := json.Unmarshal(jsonData, &result); err != nil {
+			e.logger.WithError(err).Errorf("unmarshal JSON file %s failed", path)
+			return nil
+		}
+
+		fileName := strings.TrimSuffix(d.Name(), ".json")
+		imgPath := filepath.Join(e.workDir, fileName+".jpg")
+
+		var ts time.Time
+		if result.Timestamp != 0 {
+			ts = time.Unix(result.Timestamp/1000000000, result.Timestamp%1000000000)
+		} else {
+			if jsonInfo, err := d.Info(); err == nil {
+				ts = jsonInfo.ModTime()
+			} else {
+				ts = time.Now()
+			}
+		}
+		minioPath := fmt.Sprintf("/%s/%04d/%02d/%02d/%s/%s.jpg",
+			*e.agentInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), result.JobId, fileName)
+
+		ctx, cancel := context.WithTimeout(e.ctx, 30*time.Second)
+		defer cancel()
+		if err := utils.UploadFileToMinio(ctx, e.minioCli, e.conf.S3.Bucket, imgPath, minioPath); err != nil {
+			e.logger.WithError(err).Errorf("upload image %s to minio failed", imgPath)
+			return nil
+		}
+
+		msg := &dao.Message{
+			JobUuid:     result.JobId,
+			Timestamp:   ts.UnixNano(),
+			ImagePath:   minioPath,
+			DetectBoxes: result.Boxes,
+		}
+		msgData, _ := json.Marshal(msg)
+		if err := e.nsqProducer.Publish(e.conf.NSQ.Topic, msgData); err != nil {
+			e.logger.WithError(err).Errorf("publish to NSQ failed for %s", path)
+			return nil
+		}
+
+		os.Remove(path)
+		os.Remove(imgPath)
+
+		e.logger.Infof("successfully processed %s: uploaded image to %s and sent to NSQ", path, minioPath)
+		return nil
+	})
 }

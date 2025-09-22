@@ -8,7 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/agent"
+	"lumina/internal/agent/config"
+	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
 )
 
@@ -57,7 +58,7 @@ func init() {
 
 func addJob(jobFilePath string) {
 	logrus.Infof("Adding job from file: %s", jobFilePath)
-	conf, err := agent.LoadConfig(configFile)
+	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}
@@ -75,7 +76,7 @@ func addJob(jobFilePath string) {
 		return
 	}
 
-	metadataDB, err := agent.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
+	metadataDB, err := metadata.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
 	if err != nil {
 		logrus.WithError(err).Fatalf("new metadata db")
 		return
@@ -92,12 +93,12 @@ func addJob(jobFilePath string) {
 
 func listJobs() {
 	logrus.Info("Listing all jobs")
-	conf, err := agent.LoadConfig(configFile)
+	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}
 
-	metadataDB, err := agent.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
+	metadataDB, err := metadata.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
 	if err != nil {
 		logrus.WithError(err).Fatalf("new metadata db")
 		return
@@ -127,12 +128,12 @@ func listJobs() {
 
 func deleteJob(jobUuid string) {
 	logrus.Infof("Deleting job: %s", jobUuid)
-	conf, err := agent.LoadConfig(configFile)
+	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
 	}
 
-	metadataDB, err := agent.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
+	metadataDB, err := metadata.NewMetadataDB(conf.DataDir(), logrus.WithField("component", "metadataDB"))
 	if err != nil {
 		logrus.WithError(err).Fatalf("new metadata db")
 		return

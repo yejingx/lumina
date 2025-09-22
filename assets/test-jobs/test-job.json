@@ -1,6 +1,7 @@
 {
   "uuid": "test-job-12345",
   "status": 1,
+  "kind": "detect",
   "createTime": "2024-01-15T10:30:00Z",
   "updateTime": "2024-01-15T10:35:00Z",
   "input": "/home/yejingx/lumina/assets/test.mp4",

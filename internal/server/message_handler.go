@@ -93,6 +93,12 @@ func (s *Server) handleGetMessage(c *gin.Context) {
 	message := c.MustGet(messageKey).(*model.Message)
 
 	spec := dao.FromMessageModel(message)
+	if spec.ImagePath != "" {
+		spec.ImagePath = s.conf.S3.VisitPrefix() + spec.ImagePath
+	}
+	if spec.VideoPath != "" {
+		spec.VideoPath = s.conf.S3.VisitPrefix() + spec.VideoPath
+	}
 
 	c.JSON(http.StatusOK, spec)
 }
@@ -140,13 +146,19 @@ func (s *Server) handleListMessages(c *gin.Context) {
 		return
 	}
 
-	messages, err := model.GetMessagesByJobId(req.JobId, req.Start, req.Limit)
-	if err != nil {
-		s.writeError(c, http.StatusInternalServerError, err)
-		return
+	// Set default values if not provided
+	if req.Limit == 0 {
+		req.Limit = 10
 	}
 
-	total, err := model.CountMessagesByJobId(req.JobId)
+	var err error
+	var messages []*model.Message
+	var total int64
+	if req.JobId == 0 {
+		messages, total, err = model.GetMessages(req.Start, req.Limit)
+	} else {
+		messages, total, err = model.GetMessagesByJobId(req.JobId, req.Start, req.Limit)
+	}
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
 		return
@@ -154,7 +166,14 @@ func (s *Server) handleListMessages(c *gin.Context) {
 
 	items := make([]dao.MessageSpec, len(messages))
 	for i, message := range messages {
-		items[i] = *dao.FromMessageModel(message)
+		m := *dao.FromMessageModel(message)
+		if m.ImagePath != "" {
+			m.ImagePath = s.conf.S3.VisitPrefix() + m.ImagePath
+		}
+		if m.VideoPath != "" {
+			m.VideoPath = s.conf.S3.VisitPrefix() + m.VideoPath
+		}
+		items[i] = m
 	}
 
 	resp := dao.ListMessagesResponse{

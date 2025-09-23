@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
@@ -8,19 +9,21 @@ import (
 )
 
 type Device struct {
-	Id           int       `gorm:"primaryKey"`
-	Uuid         string    `gorm:"type:char(96);unique"`
-	Token        string    `gorm:"type:char(96);unique"`
-	RegisterTime time.Time `gorm:"datetime;autoCreateTime"`
-	LastPingTime time.Time `gorm:"datetime;"`
+	Id           int          `gorm:"primaryKey"`
+	Uuid         string       `gorm:"type:char(96);unique"`
+	Name         string       `gorm:"type:char(96)"`
+	Token        string       `gorm:"type:char(96);unique"`
+	RegisterTime sql.NullTime `gorm:"datetime;autoCreateTime"`
+	LastPingTime sql.NullTime `gorm:"datetime;autoCreateTime"`
 }
 
 func (d *Device) IsRegistered() bool {
-	return d.RegisterTime != time.Time{}
+	return d.RegisterTime.Valid && d.RegisterTime.Time != time.Time{}
 }
 
 func (d *Device) Unregister() error {
-	d.RegisterTime = time.Time{}
+	d.RegisterTime = sql.NullTime{Time: time.Time{}, Valid: false}
+	d.LastPingTime = sql.NullTime{Time: time.Time{}, Valid: false}
 	return DB.Save(d).Error
 }
 
@@ -89,7 +92,7 @@ func (t *AccessToken) IsBound() bool {
 
 func (t *AccessToken) BindDevice(d *Device) error {
 	t.DeviceUuid = d.Uuid
-	d.RegisterTime = time.Now()
+	d.RegisterTime = sql.NullTime{Time: time.Now(), Valid: true}
 
 	// 使用事务确保数据一致性
 	tx := DB.Begin()
@@ -135,7 +138,7 @@ func GetAccessToken(id int) (*AccessToken, error) {
 
 func GetAccessTokenByToken(token string) (*AccessToken, error) {
 	var t AccessToken
-	err := DB.Where("token = ?", token).First(&t).Error
+	err := DB.Where("access_token = ?", token).First(&t).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

@@ -38,7 +38,7 @@ type DetectionResult struct {
 
 type AgentMessage struct {
 	JobUuid     string          `json:"jobUuid"`
-	Timestamp   int64           `json:"timestamp"`
+	Timestamp   int64           `json:"timestamp"` // us
 	ImagePath   string          `json:"imagePath,omitempty"`
 	DetectBoxes []*DetectionBox `json:"detectBoxes,omitempty"`
 	VideoPath   string          `json:"videoPath,omitempty"`
@@ -47,12 +47,12 @@ type AgentMessage struct {
 func (m AgentMessage) ToModel(job *model.Job) *model.Message {
 	mdl := &model.Message{
 		JobId:     job.Id,
-		Timestamp: time.Unix(m.Timestamp, 0),
+		Timestamp: time.Unix(m.Timestamp/1000000000, m.Timestamp%1000000000),
 		ImagePath: m.ImagePath,
 		VideoPath: m.VideoPath,
 	}
 	if m.DetectBoxes != nil {
-		mdl.DetectBoxes = make([]*model.DetectionBox, len(m.DetectBoxes))
+		mdl.DetectBoxes = make(model.DetectionBoxSlice, len(m.DetectBoxes))
 		for i, box := range m.DetectBoxes {
 			mdl.DetectBoxes[i] = box.ToModel()
 		}
@@ -135,7 +135,7 @@ func (req *CreateMessageRequest) ToModel() *model.Message {
 	}
 
 	if req.DetectBoxes != nil {
-		msg.DetectBoxes = make([]*model.DetectionBox, len(req.DetectBoxes))
+		msg.DetectBoxes = make(model.DetectionBoxSlice, len(req.DetectBoxes))
 		for i, box := range req.DetectBoxes {
 			msg.DetectBoxes[i] = box.ToModel()
 		}
@@ -153,9 +153,9 @@ type CreateMessageResponse struct {
 }
 
 type ListMessagesRequest struct {
-	JobId int `json:"jobId" binding:"required"`
-	Start int `json:"start" binding:"required,min=0"`
-	Limit int `json:"limit" binding:"required,min=1,max=50"`
+	JobId int `json:"jobId" form:"jobId"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
 }
 
 type ListMessagesResponse struct {

@@ -31,12 +31,13 @@ type VideoSegmentOptions struct {
 }
 
 type JobSpec struct {
+	Id           int                  `json:"id"`
 	Uuid         string               `json:"uuid" binding:"required"`
 	Kind         model.JobKind        `json:"kind" binding:"required"`
-	Status       model.JobStatus      `json:"status" binding:"required"`
+	Status       string               `json:"status" binding:"required"`
 	Input        string               `json:"input" binding:"required"`
-	CreateTime   string               `json:"createTime" binding:"required,datetime=RFC3339"`
-	UpdateTime   string               `json:"updateTime" binding:"required,datetime=RFC3339"`
+	CreateTime   string               `json:"createTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	UpdateTime   string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   int                  `json:"workflowId,omitempty"`
@@ -49,9 +50,10 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 		return nil, errors.New("job is nil")
 	}
 	j := &JobSpec{
+		Id:         job.Id,
 		Uuid:       job.Uuid,
 		Kind:       job.Kind,
-		Status:     job.Status,
+		Status:     job.Status.String(),
 		Input:      job.Input,
 		CreateTime: job.CreateTime.Format(time.RFC3339),
 		UpdateTime: job.UpdateTime.Format(time.RFC3339),
@@ -89,6 +91,7 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 type CreateJobRequest struct {
 	Kind         model.JobKind        `json:"kind" binding:"required"`
 	Input        string               `json:"input" binding:"required"`
+	DeviceId     int                  `json:"deviceId,omitempty"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   int                  `json:"workflowId,omitempty"`
@@ -103,6 +106,7 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 		Status:     model.JobStatusStopped,
 		WorkflowId: req.WorkflowId,
 		Query:      req.Query,
+		DeviceId:   req.DeviceId,
 	}
 
 	// 设置检测选项
@@ -149,9 +153,13 @@ type UpdateJobRequest struct {
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   *int                 `json:"workflowId,omitempty"`
 	Query        *string              `json:"query,omitempty"`
+	DeviceId     *int                 `json:"deviceId,omitempty"`
 }
 
 func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
+	if req.DeviceId != nil {
+		job.DeviceId = *req.DeviceId
+	}
 	if req.Input != nil {
 		job.Input = *req.Input
 	}
@@ -178,8 +186,8 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 }
 
 type ListJobsRequest struct {
-	Start int `json:"start,omitempty" binding:"required,min=0"`
-	Limit int `json:"limit,omitempty" binding:"required,min=1,max=50"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
 }
 
 type ListJobsResponse struct {

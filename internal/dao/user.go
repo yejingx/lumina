@@ -10,7 +10,7 @@ type UserSpec struct {
 	Username    string `json:"username" binding:"required"`
 	Nickname    string `json:"nickname" binding:"required"`
 	IsAdmin     bool   `json:"isAdmin"`
-	CreatedTime string `json:"createdTime" binding:"required,datetime=RFC3339"`
+	CreatedTime string `json:"createdTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 type LoginRequest struct {
@@ -28,9 +28,9 @@ type LoginResponse struct {
 
 type ListUsersRequest struct {
 	// 分页开始位置
-	Start int `form:"start"`
+	Start int `form:"start" binding:"min=0"`
 	// 分页大小
-	Limit int `form:"limit"`
+	Limit int `form:"limit" binding:"min=0,max=50"`
 }
 
 type ListUsersResponse struct {

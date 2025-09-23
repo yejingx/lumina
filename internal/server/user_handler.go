@@ -211,7 +211,7 @@ func (s *Server) handleAdminListUsers(c *gin.Context) {
 	}
 
 	// 设置默认值
-	if req.Limit <= 0 {
+	if req.Limit == 0 {
 		req.Limit = 20
 	}
 	if req.Start < 0 {

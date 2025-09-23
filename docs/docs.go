@@ -332,6 +332,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/agent/jobs": {
+            "get": {
+                "description": "获取设备的作业列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "设备"
+                ],
+                "summary": "获取设备的作业列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "设备ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.ListJobsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/agent/register": {
             "post": {
                 "description": "注册设备",
@@ -802,6 +852,100 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "删除成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "任务不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/job/{job_id}/start": {
+            "put": {
+                "description": "根据job_id启动任务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务"
+                ],
+                "summary": "启动任务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务job_id",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "启动成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "任务不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/job/{job_id}/stop": {
+            "put": {
+                "description": "根据job_id停止任务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务"
+                ],
+                "summary": "停止任务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务job_id",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "停止成功"
                     },
                     "400": {
                         "description": "请求参数错误",
@@ -1423,6 +1567,9 @@ const docTemplate = `{
                 "detect": {
                     "$ref": "#/definitions/dao.DetectOptions"
                 },
+                "deviceId": {
+                    "type": "integer"
+                },
                 "input": {
                     "type": "string"
                 },
@@ -1545,7 +1692,6 @@ const docTemplate = `{
                 },
                 "timeout": {
                     "type": "integer",
-                    "maximum": 3000,
                     "minimum": 1
                 }
             }
@@ -1619,6 +1765,9 @@ const docTemplate = `{
                 "lastPingTime": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "registerTime": {
                     "type": "string"
                 },
@@ -1649,6 +1798,9 @@ const docTemplate = `{
                 },
                 "device": {
                     "$ref": "#/definitions/dao.DeviceSpec"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "input": {
                     "type": "string"
@@ -1826,10 +1978,14 @@ const docTemplate = `{
         "dao.RegisterRequest": {
             "type": "object",
             "required": [
-                "accessToken"
+                "accessToken",
+                "name"
             ],
             "properties": {
                 "accessToken": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "uuid": {
@@ -1859,6 +2015,9 @@ const docTemplate = `{
             "properties": {
                 "detect": {
                     "$ref": "#/definitions/dao.DetectOptions"
+                },
+                "deviceId": {
+                    "type": "integer"
                 },
                 "input": {
                     "type": "string"
@@ -1938,7 +2097,6 @@ const docTemplate = `{
                 "endpoint",
                 "key",
                 "name",
-                "timeout",
                 "uuid"
             ],
             "properties": {
@@ -1958,9 +2116,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "timeout": {
-                    "type": "integer",
-                    "maximum": 300,
-                    "minimum": 1
+                    "type": "integer"
                 },
                 "uuid": {
                     "type": "string"

@@ -1,6 +1,11 @@
 package model
 
-import "time"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"time"
+)
 
 type DetectionBox struct {
 	X1         int     `json:"x1,omitempty"`
@@ -12,19 +17,81 @@ type DetectionBox struct {
 	Label      string  `json:"label,omitempty"`
 }
 
+// Value implements driver.Valuer interface for JSON serialization
+func (d DetectionBox) Value() (driver.Value, error) {
+	return json.Marshal(d)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization
+func (d *DetectionBox) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, d)
+}
+
+// DetectionBoxSlice is a custom type for handling []*DetectionBox serialization
+type DetectionBoxSlice []*DetectionBox
+
+// Value implements driver.Valuer interface for JSON serialization
+func (d DetectionBoxSlice) Value() (driver.Value, error) {
+	if d == nil {
+		return nil, nil
+	}
+	return json.Marshal(d)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization
+func (d *DetectionBoxSlice) Scan(value any) error {
+	if value == nil {
+		*d = nil
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, d)
+}
+
 type WorkflowResp struct {
 	Answer string `json:"answer,omitempty" gorm:"type:text"`
 }
 
+func (w WorkflowResp) Value() (driver.Value, error) {
+	return json.Marshal(w)
+}
+
+func (w *WorkflowResp) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, w)
+}
+
 type Message struct {
-	Id           int             `json:"id" gorm:"primaryKey"`
-	JobId        int             `json:"jobId" gorm:"type:int;index"`
-	Timestamp    time.Time       `json:"timestamp" gorm:"type:timestamp;index"`
-	ImagePath    string          `json:"imagePath,omitempty" gorm:"type:varchar(255)"`
-	DetectBoxes  []*DetectionBox `json:"detectBoxes,omitempty" gorm:"type:json"`
-	VideoPath    string          `json:"videoPath,omitempty" gorm:"type:varchar(255)"`
-	CreateTime   time.Time       `json:"createTime" gorm:"type:timestamp;autoCreateTime"`
-	WorkflowResp *WorkflowResp   `json:"workflowResp,omitempty" gorm:"type:json"`
+	Id           int               `json:"id" gorm:"primaryKey"`
+	JobId        int               `json:"jobId" gorm:"type:int;index"`
+	Timestamp    time.Time         `json:"timestamp" gorm:"type:datetime;index"`
+	ImagePath    string            `json:"imagePath,omitempty" gorm:"type:varchar(255)"`
+	DetectBoxes  DetectionBoxSlice `json:"detectBoxes,omitempty" gorm:"type:json"`
+	VideoPath    string            `json:"videoPath,omitempty" gorm:"type:varchar(255)"`
+	CreateTime   time.Time         `json:"createTime" gorm:"type:datetime;autoCreateTime"`
+	WorkflowResp *WorkflowResp     `json:"workflowResp,omitempty" gorm:"type:json"`
 }
 
 func AddMessage(m *Message) error {
@@ -43,18 +110,26 @@ func GetMessage(id int) (*Message, error) {
 	return m, nil
 }
 
-func GetMessagesByJobId(jobId, start, limit int) ([]*Message, error) {
+func GetMessagesByJobId(jobId, start, limit int) ([]*Message, int64, error) {
 	var ms []*Message
-	if err := DB.Where("job_id = ?", jobId).Offset(start).Limit(limit).Find(&ms).Error; err != nil {
-		return nil, err
+	if err := DB.Where("job_id = ?", jobId).Order("id desc").Offset(start).Limit(limit).Find(&ms).Error; err != nil {
+		return nil, 0, err
 	}
-	return ms, nil
-}
-
-func CountMessagesByJobId(jobId int) (int64, error) {
 	var count int64
 	if err := DB.Model(&Message{}).Where("job_id = ?", jobId).Count(&count).Error; err != nil {
-		return 0, err
+		return nil, 0, err
 	}
-	return count, nil
+	return ms, count, nil
+}
+
+func GetMessages(start, limit int) ([]*Message, int64, error) {
+	var total int64
+	var ms []*Message
+	if err := DB.Order("id desc").Offset(start).Limit(limit).Find(&ms).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := DB.Model(&Message{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	return ms, total, nil
 }

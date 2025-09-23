@@ -28,6 +28,8 @@ definitions:
     properties:
       detect:
         $ref: '#/definitions/dao.DetectOptions'
+      deviceId:
+        type: integer
       input:
         type: string
       kind:
@@ -110,7 +112,6 @@ definitions:
       name:
         type: string
       timeout:
-        maximum: 3000
         minimum: 1
         type: integer
     required:
@@ -163,6 +164,8 @@ definitions:
         type: integer
       lastPingTime:
         type: string
+      name:
+        type: string
       registerTime:
         type: string
       token:
@@ -178,6 +181,8 @@ definitions:
         $ref: '#/definitions/dao.DetectOptions'
       device:
         $ref: '#/definitions/dao.DeviceSpec'
+      id:
+        type: integer
       input:
         type: string
       kind:
@@ -303,10 +308,13 @@ definitions:
     properties:
       accessToken:
         type: string
+      name:
+        type: string
       uuid:
         type: string
     required:
     - accessToken
+    - name
     type: object
   dao.RegisterResponse:
     properties:
@@ -323,6 +331,8 @@ definitions:
     properties:
       detect:
         $ref: '#/definitions/dao.DetectOptions'
+      deviceId:
+        type: integer
       input:
         type: string
       query:
@@ -383,8 +393,6 @@ definitions:
       name:
         type: string
       timeout:
-        maximum: 300
-        minimum: 1
         type: integer
       uuid:
         type: string
@@ -392,7 +400,6 @@ definitions:
     - endpoint
     - key
     - name
-    - timeout
     - uuid
     type: object
   model.JobKind:
@@ -630,6 +637,39 @@ paths:
       summary: 创建用户
       tags:
       - 用户管理
+  /api/v1/agent/jobs:
+    get:
+      consumes:
+      - application/json
+      description: 获取设备的作业列表
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListJobsResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取设备的作业列表
+      tags:
+      - 设备
   /api/v1/agent/register:
     post:
       consumes:
@@ -954,6 +994,68 @@ paths:
           schema:
             $ref: '#/definitions/server.ErrorResponse'
       summary: 更新任务
+      tags:
+      - 任务
+  /api/v1/job/{job_id}/start:
+    put:
+      consumes:
+      - application/json
+      description: 根据job_id启动任务
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 启动成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 启动任务
+      tags:
+      - 任务
+  /api/v1/job/{job_id}/stop:
+    put:
+      consumes:
+      - application/json
+      description: 根据job_id停止任务
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 停止成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 停止任务
       tags:
       - 任务
   /api/v1/login:

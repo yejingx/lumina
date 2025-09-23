@@ -43,6 +43,15 @@ func (info *AgentInfo) Update(new *AgentInfo) {
 	}
 }
 
+func (info *AgentInfo) Desensitization() {
+	if info.Token != nil {
+		*info.Token = "********"
+	}
+	if info.S3SecretAccessKey != nil {
+		*info.S3SecretAccessKey = "********"
+	}
+}
+
 type MetadataDB struct {
 	db     *badger.DB
 	logger *logrus.Entry

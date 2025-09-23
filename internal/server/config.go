@@ -9,8 +9,6 @@ import (
 	"lumina/internal/model"
 )
 
-const defaultSqlDsn = "root:123456@tcp(127.0.0.1:3306)/lumina?charset=utf8mb4&parseTime=True&loc=Local"
-
 type S3Config struct {
 	Bucket          string `yaml:"bucket"`
 	Endpoint        string `yaml:"endpoint"`
@@ -18,6 +16,17 @@ type S3Config struct {
 	SecretAccessKey string `yaml:"secretAccessKey"`
 	UseSSL          bool   `yaml:"useSSL"`
 	Region          string `yaml:"region"`
+	VisitEndpoint   string `yaml:"visitEndpoint"`
+}
+
+func (c S3Config) VisitPrefix() string {
+	if c.VisitEndpoint == "" {
+		if c.UseSSL {
+			return fmt.Sprintf("https://%s/%s", c.Endpoint, c.Bucket)
+		}
+		return fmt.Sprintf("http://%s/%s", c.Endpoint, c.Bucket)
+	}
+	return c.VisitEndpoint + "/" + c.Bucket
 }
 
 type Config struct {
@@ -32,12 +41,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Addr: "127.0.0.1:8081",
-		DB: model.DBConfig{
-			DSN:          defaultSqlDsn,
-			MaxIdleConns: 100,
-			MaxOpenConns: 1000,
-			MaxLifetime:  60,
-		},
+		DB:   *model.DefaultDBConfig(),
 		S3: S3Config{
 			Bucket:   "lumina",
 			Endpoint: "127.0.0.1:9000",

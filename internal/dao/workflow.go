@@ -13,8 +13,8 @@ type WorkflowSpec struct {
 	Key        string `json:"key" binding:"required"`
 	Endpoint   string `json:"endpoint" binding:"required"`
 	Name       string `json:"name" binding:"required"`
-	Timeout    int    `json:"timeout" binding:"required,min=1,max=300"`
-	CreateTime string `json:"createTime" binding:"datetime=RFC3339"`
+	Timeout    int    `json:"timeout"`
+	CreateTime string `json:"createTime" binding:"datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 func FromWorkflowModel(m *model.Workflow) *WorkflowSpec {
@@ -36,7 +36,7 @@ type CreateWorkflowRequest struct {
 	Key      string `json:"key" binding:"required"`
 	Endpoint string `json:"endpoint" binding:"required"`
 	Name     string `json:"name" binding:"required"`
-	Timeout  int    `json:"timeout" binding:"min=1,max=3000"`
+	Timeout  int    `json:"timeout" binding:"min=1"`
 }
 
 func (req *CreateWorkflowRequest) ToModel() *model.Workflow {
@@ -83,8 +83,8 @@ func (req *UpdateWorkflowRequest) UpdateModel(w *model.Workflow) {
 }
 
 type ListWorkflowRequest struct {
-	Start int `json:"start" binding:"required,min=0"`
-	Limit int `json:"limit" binding:"required,min=1,max=50"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=100"`
 }
 
 type ListWorkflowResponse struct {

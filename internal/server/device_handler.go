@@ -100,6 +100,7 @@ func (s *Server) handleRegister(c *gin.Context) {
 			Uuid: str.GenDeviceId(16),
 		}
 	}
+	device.Name = req.Name
 	device.Token = genDeviceToken()
 	if err := accessToken.BindDevice(device); err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
@@ -107,8 +108,10 @@ func (s *Server) handleRegister(c *gin.Context) {
 	}
 
 	resp := dao.RegisterResponse{
-		Uuid:  device.Uuid,
-		Token: device.Token,
+		Uuid:              device.Uuid,
+		Token:             device.Token,
+		S3AccessKeyID:     s.conf.S3.AccessKeyID, // TODO sign for each agent
+		S3SecretAccessKey: s.conf.S3.SecretAccessKey,
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -220,6 +223,12 @@ func (s *Server) handleListAccessToken(c *gin.Context) {
 		s.writeError(c, http.StatusBadRequest, err)
 		return
 	}
+
+	// Set default values if not provided
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+
 	accessTokens, total, err := model.ListAccessToken(req.Start, req.Limit)
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
@@ -316,6 +325,12 @@ func (s *Server) handleListDevices(c *gin.Context) {
 		s.writeError(c, http.StatusBadRequest, err)
 		return
 	}
+
+	// Set default values if not provided
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+
 	devices, total, err := model.ListDevices(req.Start, req.Limit)
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
@@ -356,4 +371,39 @@ func (s *Server) handleDeleteDevice(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{})
+}
+
+// handleGetAgentJobs 获取设备的作业列表
+// @Summary 获取设备的作业列表
+// @Description 获取设备的作业列表
+// @Tags 设备
+// @Accept json
+// @Produce json
+// @Param device_id path int true "设备ID"
+// @Success 200 {object} dao.ListJobsResponse "获取成功"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 401 {object} ErrorResponse "未授权"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /api/v1/agent/jobs [get]
+func (s *Server) handleGetAgentJobs(c *gin.Context) {
+	agent := c.MustGet(agentKey).(*model.Device)
+	jobs, total, err := model.ListJobsByDeviceId(agent.Id, 0, 1000)
+	if err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+	resp := dao.ListJobsResponse{
+		Items: make([]dao.JobSpec, 0, len(jobs)),
+		Total: total,
+	}
+	for _, j := range jobs {
+		j.DeviceId = 0 // remove device info
+		spec, err := dao.FromJobModel(&j)
+		if err != nil {
+			s.writeError(c, http.StatusInternalServerError, err)
+			return
+		}
+		resp.Items = append(resp.Items, *spec)
+	}
+	c.JSON(http.StatusOK, resp)
 }

@@ -53,12 +53,10 @@ func (c Config) JobDir() string {
 }
 
 func DefaultConfig() *Config {
-	return &Config{
+	cfg := &Config{
 		LuminaServerAddr: "http://localhost:8080",
-		WorkDir:          "./agent_dir",
 		Triton: TritonConfig{
-			ServerAddr:   "localhost:8001",
-			ModelRepoDir: "./model_repo",
+			ServerAddr: "localhost:8001",
 		},
 		NSQ: NSQConfig{
 			NSQDAddr: "localhost:4150",
@@ -71,6 +69,17 @@ func DefaultConfig() *Config {
 			Region:   "us-east-1",
 		},
 	}
+
+	dataDir := os.Getenv("LUMINA_DATA")
+	if dataDir != "" {
+		cfg.WorkDir = path.Join(dataDir, "agent_dir")
+		cfg.Triton.ModelRepoDir = path.Join(dataDir, "model_repo")
+	} else {
+		cfg.WorkDir = "./agent_dir"
+		cfg.Triton.ModelRepoDir = "./model_repo"
+	}
+
+	return cfg
 }
 
 func LoadConfig(configPath string) (*Config, error) {

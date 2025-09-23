@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const defaultSqlDsn = "root:123456@tcp(127.0.0.1:3306)/lumina?charset=utf8mb4&parseTime=True&loc=Local"
+
 var DB *gorm.DB
 
 type DBConfig struct {
@@ -14,6 +16,15 @@ type DBConfig struct {
 	MaxIdleConns int    `yaml:"maxIdleConns"`
 	MaxOpenConns int    `yaml:"maxOpenConns"`
 	MaxLifetime  int    `yaml:"maxLifetime"`
+}
+
+func DefaultDBConfig() *DBConfig {
+	return &DBConfig{
+		DSN:          defaultSqlDsn,
+		MaxIdleConns: 100,
+		MaxOpenConns: 1000,
+		MaxLifetime:  60,
+	}
 }
 
 func InitDB(dbConfig DBConfig) (*gorm.DB, error) {

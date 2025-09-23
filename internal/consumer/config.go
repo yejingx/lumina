@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"fmt"
+	"lumina/internal/model"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -27,8 +28,9 @@ func (s3 *S3Config) UrlPrefix() string {
 }
 
 type Config struct {
-	NSQ NSQConfig `yaml:"nsq"`
-	S3  S3Config  `yaml:"s3"`
+	NSQ NSQConfig      `yaml:"nsq"`
+	S3  S3Config       `yaml:"s3"`
+	DB  model.DBConfig `yaml:"db"`
 }
 
 func DefaultConfig() *Config {
@@ -37,6 +39,7 @@ func DefaultConfig() *Config {
 			NSQDAddrs: []string{"localhost:4150"},
 			Topic:     "detection_results",
 		},
+		DB: *model.DefaultDBConfig(),
 		S3: S3Config{
 			Bucket:   "lumina",
 			Endpoint: "localhost:9000",

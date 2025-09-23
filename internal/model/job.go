@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -13,6 +15,17 @@ const (
 	JobStatusStopped JobStatus = iota
 	JobStatusRunning
 )
+
+func (j JobStatus) String() string {
+	switch j {
+	case JobStatusStopped:
+		return "stopped"
+	case JobStatusRunning:
+		return "running"
+	default:
+		return "unknown"
+	}
+}
 
 type JobKind string
 
@@ -29,8 +42,46 @@ type DetectOptions struct {
 	IoUThreshold  float32 `json:"iou_threshold" gorm:"default:0.45"`
 }
 
+// Value implements driver.Valuer interface for JSON serialization
+func (d DetectOptions) Value() (driver.Value, error) {
+	return json.Marshal(d)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization
+func (d *DetectOptions) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, d)
+}
+
 type VideoSegmentOptions struct {
 	Interval int `json:"interval" gorm:"default:30"`
+}
+
+// Value implements driver.Valuer interface for JSON serialization
+func (v VideoSegmentOptions) Value() (driver.Value, error) {
+	return json.Marshal(v)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization
+func (v *VideoSegmentOptions) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, v)
 }
 
 type Job struct {

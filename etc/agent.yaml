@@ -1,8 +1,6 @@
-luminaServerAddr: http://localhost:8080
-workDir: ./agent_dir
+luminaServerAddr: http://localhost:8181
 triton:
   serverAddr: 192.168.3.222:8001
-  modelRepoDir: ./model_repo
 s3:
   endpoint: minio-api.nm.ljyun.cn
   bucket: 1day-expire

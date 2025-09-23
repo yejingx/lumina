@@ -175,6 +175,11 @@ func (s *Server) handleListJobs(c *gin.Context) {
 		return
 	}
 
+	// Set default values if not provided
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+
 	jobs, total, err := model.ListJobs(req.Start, req.Limit)
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
@@ -196,4 +201,48 @@ func (s *Server) handleListJobs(c *gin.Context) {
 		Total: total,
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// handleStartJob 启动任务
+// @Summary 启动任务
+// @Description 根据job_id启动任务
+// @Tags 任务
+// @Accept json
+// @Produce json
+// @Param job_id path string true "任务job_id"
+// @Success 200 "启动成功"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 404 {object} ErrorResponse "任务不存在"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /api/v1/job/{job_id}/start [put]
+func (s *Server) handleStartJob(c *gin.Context) {
+	job := c.MustGet(jobKey).(*model.Job)
+	job.Status = model.JobStatusRunning
+	if err := model.UpdateJob(job); err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// handleStopJob 停止任务
+// @Summary 停止任务
+// @Description 根据job_id停止任务
+// @Tags 任务
+// @Accept json
+// @Produce json
+// @Param job_id path string true "任务job_id"
+// @Success 200 "停止成功"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 404 {object} ErrorResponse "任务不存在"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /api/v1/job/{job_id}/stop [put]
+func (s *Server) handleStopJob(c *gin.Context) {
+	job := c.MustGet(jobKey).(*model.Job)
+	job.Status = model.JobStatusStopped
+	if err := model.UpdateJob(job); err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
 }

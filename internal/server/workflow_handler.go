@@ -169,6 +169,11 @@ func (s *Server) handleListWorkflows(c *gin.Context) {
 		return
 	}
 
+	// Set default values if not provided
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+
 	workflows, total, err := model.ListWorkflows(req.Start, req.Limit)
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)

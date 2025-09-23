@@ -36,7 +36,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error, fatal)")
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "etc/config.yaml", "Path to config file")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "etc/server.yaml", "Path to config file")
 
 	rootCmd.AddCommand(serveCommand)
 	rootCmd.AddCommand(updateDBCommand)

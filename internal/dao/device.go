@@ -7,6 +7,7 @@ import (
 )
 
 type RegisterRequest struct {
+	Name        string `json:"name" binding:"required"`
 	AccessToken string `json:"accessToken" binding:"required"`
 	Uuid        string `json:"uuid"`
 }
@@ -17,17 +18,17 @@ type S3Config struct {
 }
 
 type RegisterResponse struct {
-	Uuid              string  `json:"uuid"`
-	Token             string  `json:"token"`
-	S3AccessKeyID     *string `json:"s3AccessKeyID"`
-	S3SecretAccessKey *string `json:"s3SecretAccessKey"`
+	Uuid              string `json:"uuid"`
+	Token             string `json:"token"`
+	S3AccessKeyID     string `json:"s3AccessKeyID"`
+	S3SecretAccessKey string `json:"s3SecretAccessKey"`
 }
 
 type AccessTokenSpec struct {
 	Id          int    `json:"id"`
 	AccessToken string `json:"accessToken" binding:"required"`
-	CreateTime  string `json:"createTime" binding:"datetime=RFC3339"`
-	ExpireTime  string `json:"expireTime" binding:"datetime=RFC3339"`
+	CreateTime  string `json:"createTime" binding:"datetime=2006-01-02T15:04:05Z07:00"`
+	ExpireTime  string `json:"expireTime" binding:"datetime=2006-01-02T15:04:05Z07:00"`
 	DeviceUuid  string `json:"deviceUuid"`
 }
 
@@ -47,7 +48,7 @@ func FromAccessTokenModel(m *model.AccessToken) *AccessTokenSpec {
 }
 
 type CreateAccessTokenRequest struct {
-	ExpireTime string `json:"expireTime" binding:"datetime=RFC3339"`
+	ExpireTime string `json:"expireTime" binding:"datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 type CreateAccessTokenResponse struct {
@@ -55,8 +56,8 @@ type CreateAccessTokenResponse struct {
 }
 
 type ListAccessTokenRequest struct {
-	Start int `json:"start" binding:"required,min=0"`
-	Limit int `json:"limit" binding:"required,min=1,max=50"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
 }
 
 type ListAccessTokenResponse struct {
@@ -66,6 +67,7 @@ type ListAccessTokenResponse struct {
 
 type DeviceSpec struct {
 	Id           int    `json:"id"`
+	Name         string `json:"name"`
 	Token        string `json:"token"`
 	Uuid         string `json:"uuid"`
 	RegisterTime string `json:"registerTime"`
@@ -80,16 +82,17 @@ func FromDeviceModel(m *model.Device) *DeviceSpec {
 	t.Id = m.Id
 	t.Token = m.Token
 	t.Uuid = m.Uuid
-	t.RegisterTime = m.RegisterTime.Format(time.RFC3339)
-	if !m.LastPingTime.IsZero() {
-		t.LastPingTime = m.LastPingTime.Format(time.RFC3339)
+	t.Name = m.Name
+	t.RegisterTime = m.RegisterTime.Time.Format(time.RFC3339)
+	if !m.LastPingTime.Time.IsZero() {
+		t.LastPingTime = m.LastPingTime.Time.Format(time.RFC3339)
 	}
 	return t
 }
 
 type ListDeviceRequest struct {
-	Start int `json:"start" binding:"required,min=0"`
-	Limit int `json:"limit" binding:"required,min=1,max=50"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=100"`
 }
 
 type ListDeviceResponse struct {

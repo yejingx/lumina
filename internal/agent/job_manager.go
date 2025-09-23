@@ -14,12 +14,12 @@ import (
 	"lumina/internal/model"
 )
 
-const fetchJobsPath = "/api/v1/agent/%s/jobs"
+const fetchJobsPath = "/api/v1/agent/jobs"
 
 func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64) (*dao.ListJobsResponse, error) {
 	a.logger.Debugf("fetch jobs, lastFetch: %s", time.Unix(lastFetchTs, 0).Format(time.RFC1123))
 
-	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr+fetchJobsPath, *info.Uuid))
+	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr + fetchJobsPath))
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (a *Agent) syncJobsFromServer() error {
 	}
 	for _, newJob := range newJobs {
 		if _, ok := oldJobs[newJob.Uuid]; !ok {
-			a.logger.Infof("job %s created", newJob.Uuid)
+			a.logger.Infof("job %s synced", newJob.Uuid)
 			if err := a.db.SetJob(newJob.Uuid, newJob); err != nil {
 				a.logger.WithError(err).Errorf("create job %s failed", newJob.Uuid)
 				allDbSynced = false
@@ -157,7 +157,7 @@ func (a *Agent) syncJobsFromMedadata() error {
 	}
 
 	for _, job := range metaJobs {
-		if job.Status == model.JobStatusStopped {
+		if job.Status == model.JobStatusStopped.String() {
 			continue
 		}
 		if _, ok := a.executors[job.Uuid]; !ok {

@@ -7,6 +7,8 @@ s3:
 #  bucket: agent-images
 #  region: us-east-1
 #  useSSL: false
+db:
+  dsn: root:root@tcp(127.0.0.1:22406)/lumina?charset=utf8mb4&parseTime=True&loc=Local
 nsq:
   nsqdAddrs: 
     - 127.0.0.1:4250

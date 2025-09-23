@@ -46,6 +46,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	agentAuthed := agent.Group("")
 	agentAuthed.Use(AgentAuth())
 	agentAuthed.POST("/unregister", s.handleUnregister)
+	agentAuthed.GET("/jobs", s.handleGetAgentJobs)
 
 	accessToken := apiV1.Group("/access-token")
 	accessToken.GET("", s.handleListAccessToken)
@@ -72,6 +73,8 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	job.GET("/:job_id", s.handleGetJob)
 	job.PUT("/:job_id", s.handleUpdateJob)
 	job.DELETE("/:job_id", s.handleDeleteJob)
+	job.PUT("/:job_id/start", s.handleStartJob)
+	job.PUT("/:job_id/stop", s.handleStopJob)
 
 	message := apiV1.Group("/message")
 	message.Use(SetMessageToContext())
@@ -81,7 +84,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	message.DELETE("/:message_id", s.handleDeleteMessage)
 
 	v1Authed := apiV1.Group("")
-	v1Authed.Use(NeedAuth(false))
+	// v1Authed.Use(NeedAuth(false))
 
 	v1UserSettings := v1Authed.Group("/settings")
 	v1UserSettings.GET("/profile", s.handleGetUserProfile)

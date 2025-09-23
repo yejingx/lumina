@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"lumina/internal/consumer"
+	"lumina/internal/model"
 )
 
 var consumeCmd = &cobra.Command{
@@ -20,6 +21,16 @@ var consumeCmd = &cobra.Command{
 		if err != nil {
 			logrus.Fatal("initConfig error, ", err.Error())
 		}
+
+		db, err := model.InitDB(conf.DB)
+		if err != nil {
+			logrus.Fatal("failed to init database", err)
+		}
+		defer func() {
+			sqlDB, _ := db.DB()
+			sqlDB.Close()
+		}()
+
 		c, err := consumer.NewConsumer(conf)
 		if err != nil {
 			logrus.Fatalf("Failed to create consumer: %v", err)

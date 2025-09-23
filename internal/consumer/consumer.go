@@ -90,16 +90,21 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 		return nil
 	}
 
-	resp, err := c.dify.ChatCompletion(wf, c.conf.S3.UrlPrefix()+msg.ImagePath, &msg, job.Query)
+	var answer string
+	if job.Kind == model.JobKindVideoSegment {
+		answer, err = c.dify.VideoCompletion(wf, c.conf.S3.UrlPrefix()+msg.VideoPath, job.Query)
+	} else {
+		answer, err = c.dify.ImageCompletion(wf, c.conf.S3.UrlPrefix()+msg.ImagePath, msg.DetectBoxes, job.Query)
+	}
 	if err != nil {
 		c.logger.WithError(err).Errorf("Failed to call Dify API for job %s", msg.JobUuid)
 		return err
 	}
-	c.logger.Infof("DifyChatCompletion response for job %s: %s", msg.JobUuid, resp)
+	c.logger.Infof("DifyChatCompletion response for job %s: %s", msg.JobUuid, answer)
 
 	m := msg.ToModel(job)
 	m.WorkflowResp = &model.WorkflowResp{
-		Answer: resp,
+		Answer: answer,
 	}
 	if err := model.AddMessage(m); err != nil {
 		c.logger.WithError(err).Errorf("Failed to add message to DB for job %s", msg.JobUuid)

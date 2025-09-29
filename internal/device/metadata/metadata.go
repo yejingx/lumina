@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	agentInfoKey     = "agent_info"
+	deviceInfoKey    = "device_info"
 	lastFetchTimeKey = "last_fetch_time"
 	jobKeyPrefix     = "job:"
 )
 
-type AgentInfo struct {
+type DeviceInfo struct {
 	Uuid              *string `json:"uuid,omitempty"`
 	Token             *string `json:"token,omitempty"`
 	RegisterTime      *string `json:"registerTime,omitempty"`
@@ -25,7 +25,7 @@ type AgentInfo struct {
 	S3SecretAccessKey *string `json:"s3SecretAccessKey"`
 }
 
-func (info *AgentInfo) Update(new *AgentInfo) {
+func (info *DeviceInfo) Update(new *DeviceInfo) {
 	if new.Uuid != nil {
 		info.Uuid = new.Uuid
 	}
@@ -43,7 +43,7 @@ func (info *AgentInfo) Update(new *AgentInfo) {
 	}
 }
 
-func (info *AgentInfo) Desensitization() {
+func (info *DeviceInfo) Desensitization() {
 	if info.Token != nil {
 		*info.Token = "********"
 	}
@@ -120,15 +120,15 @@ func (m *MetadataDB) List(prefix []byte) ([]*badger.Item, error) {
 	return items, nil
 }
 
-func (m *MetadataDB) GetAgentInfo() (*AgentInfo, error) {
-	val, err := m.Get([]byte(agentInfoKey))
+func (m *MetadataDB) GetDeviceInfo() (*DeviceInfo, error) {
+	val, err := m.Get([]byte(deviceInfoKey))
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	info := &AgentInfo{}
+	info := &DeviceInfo{}
 	err = json.Unmarshal(val, info)
 	if err != nil {
 		return nil, err
@@ -136,28 +136,28 @@ func (m *MetadataDB) GetAgentInfo() (*AgentInfo, error) {
 	return info, nil
 }
 
-func (m *MetadataDB) UpdateAgentInfo(new *AgentInfo) error {
+func (m *MetadataDB) UpdateDeviceInfo(new *DeviceInfo) error {
 	return m.db.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(agentInfoKey))
+		item, err := txn.Get([]byte(deviceInfoKey))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				newVal, err2 := json.Marshal(new)
 				if err2 != nil {
 					return err2
 				}
-				return txn.Set([]byte(agentInfoKey), newVal)
+				return txn.Set([]byte(deviceInfoKey), newVal)
 			}
 			return err
 		}
 		return item.Value(func(val []byte) error {
-			old := &AgentInfo{}
+			old := &DeviceInfo{}
 			json.Unmarshal(val, old)
 			old.Update(new)
 			newVal, err := json.Marshal(old)
 			if err != nil {
 				return err
 			}
-			return txn.Set([]byte(agentInfoKey), newVal)
+			return txn.Set([]byte(deviceInfoKey), newVal)
 		})
 	})
 }

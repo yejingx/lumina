@@ -8,21 +8,21 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/agent/config"
-	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/device/config"
+	"lumina/internal/device/metadata"
 )
 
 var jobCmd = &cobra.Command{
 	Use:   "job",
 	Short: "Job management tools",
-	Long:  `Manage and monitor jobs running on the agent`,
+	Long:  `Manage and monitor jobs running on the device`,
 }
 
 var addJobCmd = &cobra.Command{
 	Use:   "add <path to job.json>",
-	Short: "Add a job to the agent",
-	Long:  `Add a job to the agent for processing`,
+	Short: "Add a job to the device",
+	Long:  `Add a job to the device for processing`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		addJob(args[0])
@@ -33,7 +33,7 @@ var listJobCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List all jobs",
-	Long:    `List all jobs stored in the agent`,
+	Long:    `List all jobs stored in the device`,
 	Run: func(cmd *cobra.Command, args []string) {
 		listJobs()
 	},
@@ -43,7 +43,7 @@ var deleteJobCmd = &cobra.Command{
 	Use:     "delete <job-uuid>",
 	Aliases: []string{"rm", "del"},
 	Short:   "Delete a job",
-	Long:    `Delete a job from the agent by UUID`,
+	Long:    `Delete a job from the device by UUID`,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteJob(args[0])

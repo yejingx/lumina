@@ -59,7 +59,7 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 	c.logger.Debugf("Received NSQ message: %s", string(message.Body))
 	message.DisableAutoResponse()
 
-	var msg dao.AgentMessage
+	var msg dao.DeviceMessage
 	if err := json.Unmarshal(message.Body, &msg); err != nil {
 		c.logger.WithError(err).Error("Failed to unmarshal NSQ message")
 		return err

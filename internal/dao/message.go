@@ -36,7 +36,7 @@ type DetectionResult struct {
 	Boxes     []*DetectionBox `json:"boxes,omitempty"`
 }
 
-type AgentMessage struct {
+type DeviceMessage struct {
 	JobUuid     string          `json:"jobUuid"`
 	Timestamp   int64           `json:"timestamp"` // us
 	ImagePath   string          `json:"imagePath,omitempty"`
@@ -44,7 +44,7 @@ type AgentMessage struct {
 	VideoPath   string          `json:"videoPath,omitempty"`
 }
 
-func (m AgentMessage) ToModel(job *model.Job) *model.Message {
+func (m DeviceMessage) ToModel(job *model.Job) *model.Message {
 	mdl := &model.Message{
 		JobId:     job.Id,
 		Timestamp: time.Unix(m.Timestamp/1000000000, m.Timestamp%1000000000),

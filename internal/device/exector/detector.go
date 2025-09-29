@@ -22,9 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 
-	"lumina/internal/agent/config"
-	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/device/config"
+	"lumina/internal/device/metadata"
 	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
@@ -41,10 +41,10 @@ type Detector struct {
 	conf        *config.Config
 	nsqProducer *nsq.Producer
 	minioCli    *minio.Client
-	agentInfo   *metadata.AgentInfo
+	deviceInfo  *metadata.DeviceInfo
 }
 
-func NewDetector(conf *config.Config, agentInfo *metadata.AgentInfo, parentCtx context.Context,
+func NewDetector(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx context.Context,
 	minioCli *minio.Client, nsqProducer *nsq.Producer, job *dao.JobSpec) (*Detector, error) {
 	if job.Detect == nil {
 		return nil, fmt.Errorf("job %s detect is nil", job.Uuid)
@@ -81,7 +81,7 @@ func NewDetector(conf *config.Config, agentInfo *metadata.AgentInfo, parentCtx c
 		conf:        conf,
 		nsqProducer: nsqProducer,
 		minioCli:    minioCli,
-		agentInfo:   agentInfo,
+		deviceInfo:  deviceInfo,
 	}, nil
 }
 
@@ -411,7 +411,7 @@ func (e *Detector) listAndUpload() error {
 			}
 		}
 		minioPath := fmt.Sprintf("/%s/%04d/%02d/%02d/%s/%s.jpg",
-			*e.agentInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), result.JobId, fileName)
+			*e.deviceInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), result.JobId, fileName)
 
 		ctx, cancel := context.WithTimeout(e.ctx, 30*time.Second)
 		defer cancel()
@@ -420,7 +420,7 @@ func (e *Detector) listAndUpload() error {
 			return nil
 		}
 
-		msg := &dao.AgentMessage{
+		msg := &dao.DeviceMessage{
 			JobUuid:     result.JobId,
 			Timestamp:   ts.UnixNano(),
 			ImagePath:   minioPath,

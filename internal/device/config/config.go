@@ -72,10 +72,10 @@ func DefaultConfig() *Config {
 
 	dataDir := os.Getenv("LUMINA_DATA")
 	if dataDir != "" {
-		cfg.WorkDir = path.Join(dataDir, "agent_dir")
+		cfg.WorkDir = path.Join(dataDir, "device_dir")
 		cfg.Triton.ModelRepoDir = path.Join(dataDir, "model_repo")
 	} else {
-		cfg.WorkDir = "./agent_dir"
+		cfg.WorkDir = "./device_dir"
 		cfg.Triton.ModelRepoDir = "./model_repo"
 	}
 

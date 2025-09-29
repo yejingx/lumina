@@ -41,23 +41,21 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	apiV1.POST("/login", s.handleLogin)
 	apiV1.POST("/logout", s.handleLogout)
 
-	agent := apiV1.Group("/agent")
-	agent.POST("/register", s.handleRegister)
-	agentAuthed := agent.Group("")
-	agentAuthed.Use(AgentAuth())
-	agentAuthed.POST("/unregister", s.handleUnregister)
-	agentAuthed.GET("/jobs", s.handleGetAgentJobs)
+	device := apiV1.Group("/device")
+	device.POST("/register", s.handleRegister)
+	device.GET("", s.handleListDevices)
+	device.GET("/:device_id", s.handleGetDevice)
+	device.DELETE("/:device_id", s.handleDeleteDevice)
+
+	deviceAuthed := device.Group("").Use(DeviceAuth())
+	deviceAuthed.POST("/unregister", s.handleUnregister)
+	deviceAuthed.GET("/jobs", s.handleGetDeviceJobs)
 
 	accessToken := apiV1.Group("/access-token")
 	accessToken.GET("", s.handleListAccessToken)
 	accessToken.POST("", s.handleCreateAccessToken)
 	accessToken.DELETE("/:token_id", s.handleDeleteAccessToken)
 	accessToken.GET("/:token_id", s.handleGetAccessToken)
-
-	device := apiV1.Group("/device")
-	device.GET("", s.handleListDevices)
-	device.GET("/:device_id", s.handleGetDevice)
-	device.DELETE("/:device_id", s.handleDeleteDevice)
 
 	workflow := apiV1.Group("/workflow")
 	workflow.GET("", s.handleListWorkflows)

@@ -4,7 +4,7 @@ LDFLAGS="-X internal/version.VERSION=$(VER) -X internal/version.COMMIT=$(COMMIT)
 
 app:
 	go build -ldflags $(LDFLAGS) -o bin/lumina-server cmd/server/*.go
-	go build -ldflags $(LDFLAGS) -o bin/lumina-agent cmd/agent/*.go
+	go build -ldflags $(LDFLAGS) -o bin/device-agent cmd/device/*.go
 .PHONY: app
 
 dashboard:
@@ -16,5 +16,5 @@ test:
 .PHONY: test
 
 docs:
-	swag init -g ./cmd/server/main.go ./cmd/agent/main.go -o docs
+	swag init -g ./cmd/server/main.go ./cmd/device/main.go -o docs
 .PHONY: docs

@@ -14,13 +14,13 @@ import (
 	"lumina/pkg/str"
 )
 
-const agentKey = "agent"
+const deviceKey = "device"
 
 func genDeviceToken() string {
-	return "agent-" + str.GenToken(20)
+	return "device-" + str.GenToken(20)
 }
 
-func AgentAuth() gin.HandlerFunc {
+func DeviceAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenStr := c.Query("token")
 		if tokenStr == "" {
@@ -29,20 +29,20 @@ func AgentAuth() gin.HandlerFunc {
 				tokenStr = auth[7:]
 			}
 		}
-		if tokenStr == "" || !strings.HasPrefix(tokenStr, "agent-") {
+		if tokenStr == "" || !strings.HasPrefix(tokenStr, "device-") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid token",
 			})
 			return
 		}
-		agent, err := model.GetDeviceByToken(tokenStr)
-		if err != nil || agent == nil {
+		device, err := model.GetDeviceByToken(tokenStr)
+		if err != nil || device == nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid token",
 			})
 			return
 		}
-		c.Set(agentKey, agent)
+		c.Set(deviceKey, device)
 		c.Next()
 	}
 }
@@ -59,7 +59,7 @@ func AgentAuth() gin.HandlerFunc {
 // @Failure 401 {object} ErrorResponse "未授权"
 // @Failure 409 {object} ErrorResponse "冲突"
 // @Failure 500 {object} ErrorResponse "内部服务器错误"
-// @Router /api/v1/agent/register [post]
+// @Router /api/v1/device/register [post]
 func (s *Server) handleRegister(c *gin.Context) {
 	var req dao.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -110,7 +110,7 @@ func (s *Server) handleRegister(c *gin.Context) {
 	resp := dao.RegisterResponse{
 		Uuid:              device.Uuid,
 		Token:             device.Token,
-		S3AccessKeyID:     s.conf.S3.AccessKeyID, // TODO sign for each agent
+		S3AccessKeyID:     s.conf.S3.AccessKeyID, // TODO sign for each device
 		S3SecretAccessKey: s.conf.S3.SecretAccessKey,
 	}
 
@@ -126,10 +126,10 @@ func (s *Server) handleRegister(c *gin.Context) {
 // @Success 200 "注销成功"
 // @Failure 401 {object} ErrorResponse "未授权"
 // @Failure 500 {object} ErrorResponse "内部服务器错误"
-// @Router /api/v1/agent/unregister [post]
+// @Router /api/v1/device/unregister [post]
 func (s *Server) handleUnregister(c *gin.Context) {
-	agent := c.MustGet(agentKey).(*model.Device)
-	if err := agent.Unregister(); err != nil {
+	device := c.MustGet(deviceKey).(*model.Device)
+	if err := device.Unregister(); err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -373,7 +373,7 @@ func (s *Server) handleDeleteDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// handleGetAgentJobs 获取设备的作业列表
+// handleGetDeviceJobs 获取设备的作业列表
 // @Summary 获取设备的作业列表
 // @Description 获取设备的作业列表
 // @Tags 设备
@@ -384,10 +384,10 @@ func (s *Server) handleDeleteDevice(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse "请求参数错误"
 // @Failure 401 {object} ErrorResponse "未授权"
 // @Failure 500 {object} ErrorResponse "内部服务器错误"
-// @Router /api/v1/agent/jobs [get]
-func (s *Server) handleGetAgentJobs(c *gin.Context) {
-	agent := c.MustGet(agentKey).(*model.Device)
-	jobs, total, err := model.ListJobsByDeviceId(agent.Id, 0, 1000)
+// @Router /api/v1/device/jobs [get]
+func (s *Server) handleGetDeviceJobs(c *gin.Context) {
+	device := c.MustGet(deviceKey).(*model.Device)
+	jobs, total, err := model.ListJobsByDeviceId(device.Id, 0, 1000)
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
 		return

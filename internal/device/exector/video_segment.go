@@ -18,9 +18,9 @@ import (
 	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
-	"lumina/internal/agent/config"
-	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/device/config"
+	"lumina/internal/device/metadata"
 	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
@@ -36,10 +36,10 @@ type VideoSegmentor struct {
 	conf        *config.Config
 	nsqProducer *nsq.Producer
 	minioCli    *minio.Client
-	agentInfo   *metadata.AgentInfo
+	deviceInfo  *metadata.DeviceInfo
 }
 
-func NewVideoSegmentor(conf *config.Config, agentInfo *metadata.AgentInfo, parentCtx context.Context,
+func NewVideoSegmentor(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx context.Context,
 	minioCli *minio.Client, nsqProducer *nsq.Producer, job *dao.JobSpec) (*VideoSegmentor, error) {
 	if job.VideoSegment == nil {
 		return nil, fmt.Errorf("job %s video segment is nil", job.Uuid)
@@ -50,7 +50,7 @@ func NewVideoSegmentor(conf *config.Config, agentInfo *metadata.AgentInfo, paren
 	}
 	ctx, cancel := context.WithCancel(parentCtx)
 	return &VideoSegmentor{
-		agentInfo:   agentInfo,
+		deviceInfo:  deviceInfo,
 		ctx:         ctx,
 		cancel:      cancel,
 		wg:          &sync.WaitGroup{},
@@ -209,7 +209,7 @@ func (e *VideoSegmentor) listAndUpload() error {
 		}
 		ts := info.ModTime()
 		minioPath := fmt.Sprintf("/%s/%04d/%02d/%02d/%s/%s",
-			*e.agentInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), e.job.Uuid, filename)
+			*e.deviceInfo.Uuid, ts.Year(), ts.Month(), ts.Day(), e.job.Uuid, filename)
 
 		// 上传到 MinIO
 		ctx, cancel := context.WithTimeout(e.ctx, 30*time.Second)
@@ -221,7 +221,7 @@ func (e *VideoSegmentor) listAndUpload() error {
 		cancel()
 
 		// 创建消息并发送到 NSQ
-		msg := &dao.AgentMessage{
+		msg := &dao.DeviceMessage{
 			JobUuid:   e.job.Uuid,
 			Timestamp: ts.UnixNano(),
 			VideoPath: minioPath,

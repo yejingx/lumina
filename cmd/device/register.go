@@ -11,14 +11,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"lumina/internal/agent/config"
-	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/device/config"
+	"lumina/internal/device/metadata"
 )
 
 const (
-	agentRegisterPath   = "/api/v1/agent/register"
-	agentUnregisterPath = "/api/v1/agent/unregister"
+	deviceRegisterPath   = "/api/v1/device/register"
+	deviceUnregisterPath = "/api/v1/device/unregister"
 )
 
 var (
@@ -36,8 +36,8 @@ var registerCmd = &cobra.Command{
 
 var showRegisterCmd = &cobra.Command{
 	Use:   "show",
-	Short: "Show registered agent info",
-	Long:  `Show registered agent info`,
+	Short: "Show registered device info",
+	Long:  `Show registered device info`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showRegisterInfo()
 	},
@@ -45,8 +45,8 @@ var showRegisterCmd = &cobra.Command{
 
 var setRegisterCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set registered agent info",
-	Long:  `Set registered agent info`,
+	Short: "Set registered device info",
+	Long:  `Set registered device info`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		setRegisterInfo(args[0])
@@ -55,10 +55,10 @@ var setRegisterCmd = &cobra.Command{
 
 var unregisterCmd = &cobra.Command{
 	Use:   "unregister",
-	Short: "Unregister agent",
-	Long:  `Unregister agent`,
+	Short: "Unregister device",
+	Long:  `Unregister device`,
 	Run: func(cmd *cobra.Command, args []string) {
-		unregisterAgent()
+		unregisterDevice()
 	},
 }
 
@@ -78,13 +78,13 @@ func init() {
 	registerCmd.AddCommand(setRegisterCmd)
 
 	requestRegisterCmd.Flags().StringVar(&serverAddr, "server", serverAddr, "server address")
-	requestRegisterCmd.Flags().StringVar(&uuid, "uuid", uuid, "agent uuid")
-	requestRegisterCmd.Flags().StringVar(&deviceName, "name", deviceName, "agent name")
+	requestRegisterCmd.Flags().StringVar(&uuid, "uuid", uuid, "device uuid")
+	requestRegisterCmd.Flags().StringVar(&deviceName, "name", deviceName, "device name")
 	registerCmd.AddCommand(requestRegisterCmd)
 	registerCmd.AddCommand(unregisterCmd)
 }
 
-func getAgentInfo() (*metadata.AgentInfo, error) {
+func getDeviceInfo() (*metadata.DeviceInfo, error) {
 	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func getAgentInfo() (*metadata.AgentInfo, error) {
 	}
 	defer metadataDB.Close()
 
-	info, err := metadataDB.GetAgentInfo()
+	info, err := metadataDB.GetDeviceInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -106,13 +106,13 @@ func getAgentInfo() (*metadata.AgentInfo, error) {
 }
 
 func showRegisterInfo() {
-	info, err := getAgentInfo()
+	info, err := getDeviceInfo()
 	if err != nil {
-		logrus.WithError(err).Fatalf("get agent info")
+		logrus.WithError(err).Fatalf("get device info")
 		return
 	}
 	if info == nil {
-		logrus.Fatalf("agent info is nil")
+		logrus.Fatalf("device info is nil")
 		return
 	}
 	if !showSensitive {
@@ -121,13 +121,13 @@ func showRegisterInfo() {
 
 	data, err := json.MarshalIndent(info, "", "  ")
 	if err != nil {
-		logrus.WithError(err).Fatalf("marshal agent info to json")
+		logrus.WithError(err).Fatalf("marshal device info to json")
 		return
 	}
 	fmt.Println(string(data))
 }
 
-func setAgentInfo(info *metadata.AgentInfo) error {
+func setDeviceInfo(info *metadata.DeviceInfo) error {
 	conf, err := config.LoadConfig(configFile)
 	if err != nil {
 		logrus.Fatal("initConfig error, ", err.Error())
@@ -139,33 +139,33 @@ func setAgentInfo(info *metadata.AgentInfo) error {
 	}
 	defer metadataDB.Close()
 
-	if err := metadataDB.UpdateAgentInfo(info); err != nil {
+	if err := metadataDB.UpdateDeviceInfo(info); err != nil {
 		return err
 	}
 	return nil
 }
 
-func setRegisterInfo(agentInfoPath string) {
-	logrus.Infof("set register info from file: %s", agentInfoPath)
-	data, err := os.ReadFile(agentInfoPath)
+func setRegisterInfo(deviceInfoPath string) {
+	logrus.Infof("set register info from file: %s", deviceInfoPath)
+	data, err := os.ReadFile(deviceInfoPath)
 	if err != nil {
-		logrus.WithError(err).Fatalf("read agent info file")
+		logrus.WithError(err).Fatalf("read device info file")
 		return
 	}
 
-	var agentInfo metadata.AgentInfo
-	if err2 := json.Unmarshal(data, &agentInfo); err2 != nil {
-		logrus.WithError(err2).Fatalf("unmarshal agent info from file")
+	var deviceInfo metadata.DeviceInfo
+	if err2 := json.Unmarshal(data, &deviceInfo); err2 != nil {
+		logrus.WithError(err2).Fatalf("unmarshal device info from file")
 		return
 	}
 	registerTime := time.Now().Format(time.RFC3339)
-	agentInfo.RegisterTime = &registerTime
+	deviceInfo.RegisterTime = &registerTime
 
-	if err := setAgentInfo(&agentInfo); err != nil {
-		logrus.WithError(err).Fatalf("set agent info")
+	if err := setDeviceInfo(&deviceInfo); err != nil {
+		logrus.WithError(err).Fatalf("set device info")
 		return
 	}
-	logrus.Infof("register agent %s success", *agentInfo.Uuid)
+	logrus.Infof("register device %s success", *deviceInfo.Uuid)
 }
 
 func requestRegisterInfo(accessToken string) {
@@ -181,7 +181,7 @@ func requestRegisterInfo(accessToken string) {
 		Name:        deviceName,
 	}
 	jsonData, _ := json.Marshal(req)
-	resp, err := http.Post(serverAddr+agentRegisterPath, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(serverAddr+deviceRegisterPath, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		logrus.WithError(err).Fatalf("request register info from server")
 		return
@@ -198,7 +198,7 @@ func requestRegisterInfo(accessToken string) {
 	}
 
 	registerTime := time.Now().Format(time.RFC3339)
-	agentInfo := &metadata.AgentInfo{
+	deviceInfo := &metadata.DeviceInfo{
 		Uuid:              &respBody.Uuid,
 		Token:             &respBody.Token,
 		S3AccessKeyID:     &respBody.S3AccessKeyID,
@@ -206,25 +206,25 @@ func requestRegisterInfo(accessToken string) {
 		RegisterTime:      &registerTime,
 	}
 
-	if err := setAgentInfo(agentInfo); err != nil {
-		logrus.WithError(err).Fatalf("set agent info")
+	if err := setDeviceInfo(deviceInfo); err != nil {
+		logrus.WithError(err).Fatalf("set device info")
 		return
 	}
-	logrus.Infof("register agent %s success", *agentInfo.Uuid)
+	logrus.Infof("register device %s success", *deviceInfo.Uuid)
 }
 
-func unregisterAgent() {
-	info, err := getAgentInfo()
+func unregisterDevice() {
+	info, err := getDeviceInfo()
 	if err != nil {
-		logrus.WithError(err).Fatalf("get agent info")
+		logrus.WithError(err).Fatalf("get device info")
 		return
 	}
 	if info == nil {
-		logrus.Fatalf("agent info is nil")
+		logrus.Fatalf("device info is nil")
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, serverAddr+agentUnregisterPath, nil)
+	req, err := http.NewRequest(http.MethodPost, serverAddr+deviceUnregisterPath, nil)
 	if err != nil {
 		logrus.WithError(err).Fatalf("new request")
 		return
@@ -232,23 +232,23 @@ func unregisterAgent() {
 	req.Header.Set("Authorization", "Bearer "+*info.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logrus.WithError(err).Fatalf("unregister agent from server")
+		logrus.WithError(err).Fatalf("unregister device from server")
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		logrus.WithError(err).Fatalf("unregister agent from server, status code: %d", resp.StatusCode)
+		logrus.WithError(err).Fatalf("unregister device from server, status code: %d", resp.StatusCode)
 		return
 	}
-	logrus.Infof("unregister agent %s success", *info.Uuid)
+	logrus.Infof("unregister device %s success", *info.Uuid)
 
 	empty := ""
 	info.Token = &empty
 	info.S3AccessKeyID = &empty
 	info.S3SecretAccessKey = &empty
 	info.RegisterTime = &empty
-	if err := setAgentInfo(info); err != nil {
-		logrus.WithError(err).Fatalf("set agent info")
+	if err := setDeviceInfo(info); err != nil {
+		logrus.WithError(err).Fatalf("set device info")
 		return
 	}
 }

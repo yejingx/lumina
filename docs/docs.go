@@ -332,7 +332,64 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/agent/jobs": {
+        "/api/v1/device": {
+            "get": {
+                "description": "列出设备",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "设备"
+                ],
+                "summary": "列出设备",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分页起始位置",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分页每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "列出成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.ListDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/device/jobs": {
             "get": {
                 "description": "获取设备的作业列表",
                 "consumes": [
@@ -382,7 +439,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/agent/register": {
+        "/api/v1/device/register": {
             "post": {
                 "description": "注册设备",
                 "consumes": [
@@ -440,7 +497,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/agent/unregister": {
+        "/api/v1/device/unregister": {
             "post": {
                 "description": "注销设备",
                 "consumes": [
@@ -456,63 +513,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "注销成功"
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/server.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "内部服务器错误",
-                        "schema": {
-                            "$ref": "#/definitions/server.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/device": {
-            "get": {
-                "description": "列出设备",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "设备"
-                ],
-                "summary": "列出设备",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "分页起始位置",
-                        "name": "start",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "分页每页数量",
-                        "name": "limit",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "列出成功",
-                        "schema": {
-                            "$ref": "#/definitions/dao.ListDeviceResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/server.ErrorResponse"
-                        }
                     },
                     "401": {
                         "description": "未授权",
@@ -1812,7 +1812,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/model.JobStatus"
+                    "type": "string"
                 },
                 "updateTime": {
                     "type": "string"
@@ -2132,17 +2132,6 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "JobKindDetect",
                 "JobKindVideoSegment"
-            ]
-        },
-        "model.JobStatus": {
-            "type": "integer",
-            "enum": [
-                0,
-                1
-            ],
-            "x-enum-varnames": [
-                "JobStatusStopped",
-                "JobStatusRunning"
             ]
         },
         "server.ErrorResponse": {

@@ -4,7 +4,7 @@ s3:
   region: us-east-1
   useSSL: true
 #  endpoint: 127.0.0.1:19200
-#  bucket: agent-images
+#  bucket: device-images
 #  region: us-east-1
 #  useSSL: false
 db:
@@ -12,7 +12,7 @@ db:
 nsq:
   nsqdAddrs: 
     - 127.0.0.1:4250
-  topic: agent_result
+  topic: device_result
 vlm:
   apiKey: 22d76d7444577c4cc74da646f1ac317a
   baseURL: http://36.150.51.8:8000/v1

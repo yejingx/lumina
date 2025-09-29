@@ -7,9 +7,9 @@ s3:
   region: us-east-1
   useSSL: true
 #  endpoint: 127.0.0.1:19200
-#  bucket: agent-images
+#  bucket: device-images
 #  region: us-east-1
 #  useSSL: false
 nsq:
   nsqdAddr: 127.0.0.1:4250
-  topic: agent_result
+  topic: device_result

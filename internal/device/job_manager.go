@@ -1,4 +1,4 @@
-package agent
+package device
 
 import (
 	"encoding/json"
@@ -8,15 +8,15 @@ import (
 	"net/url"
 	"time"
 
-	"lumina/internal/agent/exector"
-	"lumina/internal/agent/metadata"
 	"lumina/internal/dao"
+	"lumina/internal/device/exector"
+	"lumina/internal/device/metadata"
 	"lumina/internal/model"
 )
 
-const fetchJobsPath = "/api/v1/agent/jobs"
+const fetchJobsPath = "/api/v1/device/jobs"
 
-func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64) (*dao.ListJobsResponse, error) {
+func (a *Device) fetchJobsFromServer(info *metadata.DeviceInfo, lastFetchTs int64) (*dao.ListJobsResponse, error) {
 	a.logger.Debugf("fetch jobs, lastFetch: %s", time.Unix(lastFetchTs, 0).Format(time.RFC1123))
 
 	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr + fetchJobsPath))
@@ -55,12 +55,12 @@ func (a *Agent) fetchJobsFromServer(info *metadata.AgentInfo, lastFetchTs int64)
 	return &respBody, nil
 }
 
-func (a *Agent) syncJobsFromServer() error {
-	info, err := a.db.GetAgentInfo()
+func (a *Device) syncJobsFromServer() error {
+	info, err := a.db.GetDeviceInfo()
 	if err != nil {
 		return err
 	} else if info == nil || info.Uuid == nil {
-		return errors.New("agent Id is nil, please register agent")
+		return errors.New("device Id is nil, please register device")
 	}
 
 	lastFetchTs, err := a.db.GetLastFetchTime()
@@ -133,7 +133,7 @@ func (a *Agent) syncJobsFromServer() error {
 	return nil
 }
 
-func (a *Agent) syncJobsFromMedadata() error {
+func (a *Device) syncJobsFromMedadata() error {
 	jobs, err := a.db.GetJobs()
 	if err != nil {
 		return err
@@ -178,12 +178,12 @@ func (a *Agent) syncJobsFromMedadata() error {
 	return nil
 }
 
-func (a *Agent) newExector(job *dao.JobSpec) (exector.Executor, error) {
+func (a *Device) newExector(job *dao.JobSpec) (exector.Executor, error) {
 	switch job.Kind {
 	case model.JobKindDetect:
-		return exector.NewDetector(a.conf, a.agentInfo, a.ctx, a.minioCli, a.nsqProducer, job)
+		return exector.NewDetector(a.conf, a.deviceInfo, a.ctx, a.minioCli, a.nsqProducer, job)
 	case model.JobKindVideoSegment:
-		return exector.NewVideoSegmentor(a.conf, a.agentInfo, a.ctx, a.minioCli, a.nsqProducer, job)
+		return exector.NewVideoSegmentor(a.conf, a.deviceInfo, a.ctx, a.minioCli, a.nsqProducer, job)
 	default:
 		return nil, fmt.Errorf("unknown job kind %s", job.Kind)
 	}

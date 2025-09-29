@@ -1,4 +1,4 @@
-package agent
+package device
 
 import (
 	"context"
@@ -12,13 +12,13 @@ import (
 	"github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
 
-	"lumina/internal/agent/config"
-	"lumina/internal/agent/exector"
-	"lumina/internal/agent/metadata"
+	"lumina/internal/device/config"
+	"lumina/internal/device/exector"
+	"lumina/internal/device/metadata"
 	"lumina/pkg/log"
 )
 
-type Agent struct {
+type Device struct {
 	conf        *config.Config
 	ctx         context.Context
 	cancel      context.CancelFunc
@@ -26,15 +26,15 @@ type Agent struct {
 	db          *metadata.MetadataDB
 	httpCli     *http.Client
 	executors   map[string]exector.Executor
-	agentInfo   *metadata.AgentInfo
+	deviceInfo  *metadata.DeviceInfo
 	nsqProducer *nsq.Producer
 	minioCli    *minio.Client
 }
 
-func NewAgent(conf *config.Config) (*Agent, error) {
+func NewDevice(conf *config.Config) (*Device, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	logger := log.GetLogger(ctx).WithField("component", "agent")
+	logger := log.GetLogger(ctx).WithField("component", "device")
 
 	db, err := metadata.NewMetadataDB(conf.DataDir(), logger)
 	if err != nil {
@@ -42,10 +42,13 @@ func NewAgent(conf *config.Config) (*Agent, error) {
 		return nil, err
 	}
 
-	info, err := db.GetAgentInfo()
+	info, err := db.GetDeviceInfo()
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("get agent info failed: %w", err)
+		return nil, fmt.Errorf("get device info failed: %w", err)
+	} else if info == nil {
+		cancel()
+		return nil, fmt.Errorf("device info is nil")
 	}
 
 	region := conf.S3.Region
@@ -78,7 +81,7 @@ func NewAgent(conf *config.Config) (*Agent, error) {
 		return nil, fmt.Errorf("create NSQ producer failed: %w", err)
 	}
 
-	return &Agent{
+	return &Device{
 		conf:        conf,
 		ctx:         ctx,
 		cancel:      cancel,
@@ -86,19 +89,19 @@ func NewAgent(conf *config.Config) (*Agent, error) {
 		db:          db,
 		httpCli:     httpCli,
 		executors:   make(map[string]exector.Executor),
-		agentInfo:   info,
+		deviceInfo:  info,
 		nsqProducer: producer,
 		minioCli:    minioCli,
 	}, nil
 }
 
-func (a *Agent) Start() {
+func (a *Device) Start() {
 	fetchTicker := time.NewTicker(5 * time.Second)
 	syncTicker := time.NewTicker(1 * time.Second)
 	defer func() {
 		fetchTicker.Stop()
 		syncTicker.Stop()
-		a.logger.Info("agent stopped")
+		a.logger.Info("device stopped")
 	}()
 
 	for {
@@ -119,7 +122,7 @@ func (a *Agent) Start() {
 	}
 }
 
-func (a *Agent) Stop() {
+func (a *Device) Stop() {
 	a.cancel()
 	a.db.Close()
 	a.nsqProducer.Stop()

@@ -15,9 +15,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "lumina-agent",
-	Short: "lumina agent is a vision AI task engine",
-	Long: `lumina agent is a vision AI agent that runs on edge devices.
+	Use:   "lumina-device",
+	Short: "lumina device is a vision AI task engine",
+	Long: `lumina device is a vision AI device that runs on edge devices.
 Version: ` + version.VERSION + `/` + version.COMMIT,
 	CompletionOptions: cobra.CompletionOptions{
 		DisableDefaultCmd: true,
@@ -36,7 +36,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error, fatal)")
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "etc/agent.yaml", "Path to config file")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "etc/device.yaml", "Path to config file")
 
 	rootCmd.AddCommand(serveCommand)
 	rootCmd.AddCommand(jobCmd)

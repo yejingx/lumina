@@ -1,6 +1,6 @@
 {
-    "uuid": "agent-001",
-    "token": "agent-token-001",
+    "uuid": "device-001",
+    "token": "device-token-001",
     "registerTime": "2024-01-15T10:30:00Z",
     "s3AccessKeyID": "minioadmin",
     "s3SecretAccessKey": "minioadmin"

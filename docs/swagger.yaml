@@ -190,7 +190,7 @@ definitions:
       query:
         type: string
       status:
-        $ref: '#/definitions/model.JobStatus'
+        type: string
       updateTime:
         type: string
       uuid:
@@ -410,14 +410,6 @@ definitions:
     x-enum-varnames:
     - JobKindDetect
     - JobKindVideoSegment
-  model.JobStatus:
-    enum:
-    - 0
-    - 1
-    type: integer
-    x-enum-varnames:
-    - JobStatusStopped
-    - JobStatusRunning
   server.ErrorResponse:
     properties:
       error:
@@ -637,98 +629,6 @@ paths:
       summary: 创建用户
       tags:
       - 用户管理
-  /api/v1/agent/jobs:
-    get:
-      consumes:
-      - application/json
-      description: 获取设备的作业列表
-      parameters:
-      - description: 设备ID
-        in: path
-        name: device_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 获取成功
-          schema:
-            $ref: '#/definitions/dao.ListJobsResponse'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "500":
-          description: 内部服务器错误
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-      summary: 获取设备的作业列表
-      tags:
-      - 设备
-  /api/v1/agent/register:
-    post:
-      consumes:
-      - application/json
-      description: 注册设备
-      parameters:
-      - description: 注册请求
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/dao.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 注册成功
-          schema:
-            $ref: '#/definitions/dao.RegisterResponse'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "409":
-          description: 冲突
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "500":
-          description: 内部服务器错误
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-      summary: 注册设备
-      tags:
-      - 设备
-  /api/v1/agent/unregister:
-    post:
-      consumes:
-      - application/json
-      description: 注销设备
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 注销成功
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-        "500":
-          description: 内部服务器错误
-          schema:
-            $ref: '#/definitions/server.ErrorResponse'
-      summary: 注销设备
-      tags:
-      - 设备
   /api/v1/device:
     get:
       consumes:
@@ -828,6 +728,98 @@ paths:
           schema:
             $ref: '#/definitions/server.ErrorResponse'
       summary: 获取设备
+      tags:
+      - 设备
+  /api/v1/device/jobs:
+    get:
+      consumes:
+      - application/json
+      description: 获取设备的作业列表
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListJobsResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取设备的作业列表
+      tags:
+      - 设备
+  /api/v1/device/register:
+    post:
+      consumes:
+      - application/json
+      description: 注册设备
+      parameters:
+      - description: 注册请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            $ref: '#/definitions/dao.RegisterResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "409":
+          description: 冲突
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 注册设备
+      tags:
+      - 设备
+  /api/v1/device/unregister:
+    post:
+      consumes:
+      - application/json
+      description: 注销设备
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注销成功
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 注销设备
       tags:
       - 设备
   /api/v1/job:

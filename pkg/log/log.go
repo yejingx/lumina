@@ -28,6 +28,7 @@ func InitLog(logLevel string) {
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   true,
 		DisableColors:   true,
+		DisableQuote:    true,
 		CallerPrettyfier: func(frame *runtime.Frame) (string, string) {
 			return "", fmt.Sprintf("%s:%d", path.Base(frame.File), frame.Line)
 		},

@@ -42,6 +42,7 @@ func init() {
 	rootCmd.AddCommand(updateDBCommand)
 	rootCmd.AddCommand(toolsCmd)
 	rootCmd.AddCommand(consumeCmd)
+	rootCmd.AddCommand(agentCmd)
 }
 
 func main() {

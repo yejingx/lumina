@@ -23,14 +23,14 @@ type BaseToolResult struct {
 	Id string `json:"id"`
 }
 
-func (b BaseToolResult) GetId() string {
+func (b *BaseToolResult) GetId() string {
 	return b.Id
 }
 
 type Tool struct {
-	Name             string                                           `json:"name"`
-	Description      string                                           `json:"description"`
-	ParametersSchema any                                              `json:"-"`
+	Name             string                                           `json:"name" jsonschema:"description=Tool name"`
+	Description      string                                           `json:"description" jsonschema:"description=Tool description"`
+	ParametersSchema any                                              `json:"parameters_schema" jsonschema:"description=Tool parameters schema"`
 	Func             func(id string, args string) (ToolResult, error) `json:"-"`
 }
 

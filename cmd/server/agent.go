@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
-	"net/http"
 	"os"
 	"time"
 
@@ -46,17 +44,6 @@ OUTPUT REQUIREMENTS:
 - Summarize the site's primary purpose in 1-2 sentences
 - List 5-10 key insights that reveal important aspects of the site`
 
-type HttpToolParams struct {
-	URL string `json:"url" jsonschema_description:"URL to fetch"`
-}
-
-type HttpToolResult struct {
-	agent.BaseToolResult
-	StatusCode int               `json:"status_code" jsonschema_description:"HTTP status code"`
-	Body       string            `json:"body"        jsonschema_description:"Response body"`
-	Headers    map[string]string `json:"headers"     jsonschema_description:"Response headers"`
-}
-
 var agentCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "Agent for lumina",
@@ -77,77 +64,6 @@ func init() {
 	agentCmd.AddCommand(testAgentCmd)
 }
 
-func createErrorResult(callID string, statusCode int, errorMsg string) HttpToolResult {
-	return HttpToolResult{
-		BaseToolResult: agent.BaseToolResult{Id: callID},
-		StatusCode:     statusCode,
-		Body:           errorMsg,
-		Headers:        map[string]string{},
-	}
-}
-
-func extractHeaders(header http.Header) map[string]string {
-	headers := make(map[string]string)
-	for name, values := range header {
-		if len(values) > 0 {
-			headers[name] = values[0]
-		}
-	}
-
-	return headers
-}
-
-func handleHttpRequest(callID string, params HttpToolParams) (HttpToolResult, error) {
-	logrus.Debugf("HTTP CALL: GET %s", params.URL)
-
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, params.URL, nil)
-	if err != nil {
-		return createErrorResult(callID, 0, "Error creating request: "+err.Error()), nil
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return createErrorResult(callID, 0, "Error: "+err.Error()), nil
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			logrus.Errorf("Error closing response body: %v", closeErr)
-		}
-	}()
-
-	headers := extractHeaders(resp.Header)
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return HttpToolResult{
-			BaseToolResult: agent.BaseToolResult{Id: callID},
-			StatusCode:     resp.StatusCode,
-			Body:           "Error reading response body: " + err.Error(),
-			Headers:        headers,
-		}, nil
-	}
-
-	result := HttpToolResult{
-		BaseToolResult: agent.BaseToolResult{Id: callID},
-		StatusCode:     resp.StatusCode,
-		Body:           string(body),
-		Headers:        headers,
-	}
-
-	logrus.Debugf("HTTP RESULT: %d - %d bytes", resp.StatusCode, len(body))
-
-	return result, nil
-}
-
-func registerTestRools(a *agent.Agent) {
-	a.AddTool(agent.NewTool(
-		agent.WithToolName("http"),
-		agent.WithToolDescription("Fetches content from a URL via HTTP GET request"),
-		agent.WithToolParamsSchema[HttpToolParams](),
-		agent.WithToolFunc(handleHttpRequest),
-	))
-}
-
 func testAgent(query string) {
 	baseUrl := os.Getenv("OPENAI_API_BASE_URL")
 	if baseUrl == "" {
@@ -165,13 +81,11 @@ func testAgent(query string) {
 		Temperature: 0.6,
 		Timeout:     300 * time.Second,
 	}, 10, instruction)
-	registerTestRools(agent)
 
 	ctx := context.Background()
-	result, err := agent.Run(ctx, query)
+	err := agent.RunStream(ctx, query, os.Stdout)
 	if err != nil {
-		logrus.Errorf("Error running agent: %v", err)
+		logrus.Errorf("Error running agent stream: %v", err)
 		return
 	}
-	logrus.Infof("Agent result: %v", result.Content)
 }

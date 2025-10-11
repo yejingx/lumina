@@ -127,7 +127,7 @@ func (a *Agent) Run(ctx context.Context, query string) (*LLMMessage, error) {
 	return messages[len(messages)-1], nil
 }
 
-func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error {
+func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) ([]*LLMMessage, error) {
 	messages := make([]*LLMMessage, 0)
 
 	toolsDesc, _ := json.MarshalIndent(a.tools, "", "  ")
@@ -140,7 +140,7 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error 
 		"tools":       string(toolsDesc),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to render prompt: %w", err)
+		return nil, fmt.Errorf("failed to render prompt: %w", err)
 	}
 	messages = append(messages, &LLMMessage{
 		Role:    RoleSystem,
@@ -158,7 +158,7 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error 
 	for i := 0; i < a.maxIterations; i++ {
 		response, err := a.llm.ChatCompletionStream(ctx, messages, tools, w)
 		if err != nil {
-			return fmt.Errorf("streaming chat completion failed: %w", err)
+			return nil, fmt.Errorf("streaming chat completion failed: %w", err)
 		}
 
 		// Add the assistant's response to the conversation
@@ -177,6 +177,14 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error 
 				a.logger.Warnf("tool %s not found", toolCall.ToolName)
 				continue
 			}
+
+			// Write tool execution info to stream
+			msg := LLMMessage{
+				Role:    RoleAssistant,
+				ToolCalls:  []ToolCall{toolCall},
+			}
+			msgData, _ := json.Marshal(msg)
+			w.Write([]byte("data: " + string(msgData) + "\n"))
 
 			a.logger.Debugf("executing tool %s with args: %s", toolCall.ToolName, toolCall.Args)
 			result, err := tool.Func(toolCall.Id, toolCall.Args)
@@ -198,16 +206,8 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error 
 					ToolCallId: toolCall.Id,
 				})
 			}
-
-			// Write tool execution info to stream
-			msg := LLMMessage{
-				Role:    RoleAssistant,
-				ToolCalls:  []ToolCall{toolCall},
-			}
-			msgData, _ := json.Marshal(msg)
-			w.Write([]byte("data: " + string(msgData) + "\n"))
 		}
 	}
 
-	return nil
+	return messages[2:], nil
 }

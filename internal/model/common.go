@@ -73,6 +73,14 @@ func AutoMigrate(db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	err = db.AutoMigrate(&Conversation{})
+	if err != nil {
+		return err
+	}
+	err = db.AutoMigrate(&LLMMessage{})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

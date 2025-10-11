@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"lumina/internal/utils"
 	"net/http"
 	"time"
 
@@ -87,11 +88,12 @@ func handleHttpRequest(callID string, params HttpToolParams) (*HttpToolResult, e
 	if err != nil {
 		return nil, err
 	}
+	mainContent := utils.ExtractMainContent(body)
 
 	result := &HttpToolResult{
 		BaseToolResult: BaseToolResult{Id: callID},
 		StatusCode:     resp.StatusCode,
-		Body:           string(body),
+		Body:           mainContent,
 		Headers:        headers,
 	}
 

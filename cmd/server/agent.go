@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -83,9 +87,57 @@ func testAgent(query string) {
 	}, 10, instruction)
 
 	ctx := context.Background()
-	err := agent.RunStream(ctx, query, os.Stdout)
+
+	// Create a custom writer to parse SSE format data
+	customWriter := &SSEWriter{output: os.Stdout}
+
+	err := agent.RunStream(ctx, query, customWriter)
 	if err != nil {
 		logrus.Errorf("Error running agent stream: %v", err)
 		return
 	}
+}
+
+// SSEWriter parses SSE format data and prints only content or tool call parameters
+type SSEWriter struct {
+	output io.Writer
+}
+
+func (w *SSEWriter) Write(p []byte) (n int, err error) {
+	data := string(p)
+
+	// Handle SSE format: "data: {...}\n"
+	if jsonStr, ok := strings.CutPrefix(data, "data: "); ok {
+		jsonStr = strings.TrimSpace(jsonStr)
+
+		// Skip [DONE] message
+		if jsonStr == "[DONE]" {
+			return len(p), nil
+		}
+
+		// Parse JSON message
+		var msg agent.LLMMessage
+		if err := json.Unmarshal([]byte(jsonStr), &msg); err != nil {
+			// If parsing fails, just write original data
+			return w.output.Write(p)
+		}
+
+		// Print content if available
+		if msg.Content != "" {
+			w.output.Write([]byte(msg.Content))
+		}
+
+		// Print tool calls if available
+		if len(msg.ToolCalls) > 0 {
+			for _, toolCall := range msg.ToolCalls {
+				toolInfo := fmt.Sprintf("\n\n🔧 调用工具: %s, 参数: %s\n\n", toolCall.ToolName, toolCall.Args)
+				w.output.Write([]byte(toolInfo))
+			}
+		}
+
+		return len(p), nil
+	}
+
+	// For non-SSE data, write as is
+	return w.output.Write(p)
 }

@@ -306,7 +306,8 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP request failed with status: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("HTTP request failed with status: %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	// Variables to accumulate the complete response
@@ -329,6 +330,7 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 		if !ok {
 			continue
 		} else if data == "[DONE]" {
+			writer.Write([]byte("data: [DONE]\n"))
 			break
 		}
 
@@ -352,7 +354,12 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 		if delta.Content != "" {
 			completeContent.WriteString(delta.Content)
 			// Write content to output stream
-			_, err := writer.Write([]byte(delta.Content))
+			msg := LLMMessage{
+				Role:    LLMMessageRole(currentRole),
+				Content: delta.Content,
+			}
+			msgData, _ := json.Marshal(msg)
+			_, err := writer.Write([]byte("data: " + string(msgData) + "\n"))
 			if err != nil {
 				return nil, fmt.Errorf("failed to write content: %w", err)
 			}

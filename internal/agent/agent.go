@@ -200,9 +200,12 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) error 
 			}
 
 			// Write tool execution info to stream
-			toolInfoJSON, _ := json.MarshalIndent(NewToolCall(toolCall.Id, toolCall.ToolName, toolCall.Args), "", "  ")
-			toolCallStr := fmt.Sprintf("\n\n🔧 调用工具：\n%s\n\n", string(toolInfoJSON))
-			w.Write([]byte(toolCallStr))
+			msg := LLMMessage{
+				Role:    RoleAssistant,
+				ToolCalls:  []ToolCall{toolCall},
+			}
+			msgData, _ := json.Marshal(msg)
+			w.Write([]byte("data: " + string(msgData) + "\n"))
 		}
 	}
 

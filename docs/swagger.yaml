@@ -14,6 +14,20 @@ definitions:
     required:
     - accessToken
     type: object
+  dao.ConversationSpec:
+    properties:
+      createTime:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      uuid:
+        type: string
+    required:
+    - createTime
+    - uuid
+    type: object
   dao.CreateAccessTokenRequest:
     properties:
       expireTime:
@@ -23,6 +37,18 @@ definitions:
     properties:
       token:
         type: string
+    type: object
+  dao.CreateConversationRequest:
+    properties:
+      title:
+        type: string
+    type: object
+  dao.CreateConversationResponse:
+    properties:
+      uuid:
+        type: string
+    required:
+    - uuid
     type: object
   dao.CreateJobRequest:
     properties:
@@ -207,11 +233,35 @@ definitions:
     - updateTime
     - uuid
     type: object
+  dao.LLMMessageSpec:
+    properties:
+      content:
+        type: string
+      conversationId:
+        type: integer
+      createTime:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+      toolCall:
+        $ref: '#/definitions/dao.ToolCall'
+    type: object
   dao.ListAccessTokenResponse:
     properties:
       accessTokens:
         items:
           $ref: '#/definitions/dao.AccessTokenSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListConversationsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.ConversationSpec'
         type: array
       total:
         type: integer
@@ -230,6 +280,15 @@ definitions:
       items:
         items:
           $ref: '#/definitions/dao.JobSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListLLMMessagesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.LLMMessageSpec'
         type: array
       total:
         type: integer
@@ -325,6 +384,13 @@ definitions:
       token:
         type: string
       uuid:
+        type: string
+    type: object
+  dao.ToolCall:
+    properties:
+      args:
+        type: string
+      name:
         type: string
     type: object
   dao.UpdateJobRequest:
@@ -1413,4 +1479,191 @@ paths:
       summary: 更新工作流
       tags:
       - 工作流
+  /v1/conversation:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有对话，支持分页
+      parameters:
+      - description: 分页起始索引
+        in: query
+        name: start
+        type: integer
+      - description: 分页每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.ListConversationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 获取对话列表
+      tags:
+      - 对话
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的对话，标题为请求体中的title字段
+      parameters:
+      - description: 创建对话请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.CreateConversationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 创建对话
+      tags:
+      - 对话
+  /v1/conversation/{uuid}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定UUID的对话
+      parameters:
+      - description: 对话UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: conversation deleted'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 删除对话
+      tags:
+      - 对话
+    get:
+      consumes:
+      - application/json
+      description: 获取指定UUID的对话
+      parameters:
+      - description: 对话UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.ConversationSpec'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 获取对话
+      tags:
+      - 对话
+  /v1/conversation/message:
+    get:
+      consumes:
+      - application/json
+      description: 根据conversationId分页获取LLM消息列表
+      parameters:
+      - description: 对话ID
+        in: query
+        name: conversationId
+        required: true
+        type: integer
+      - default: 0
+        description: 起始位置
+        in: query
+        name: start
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListLLMMessagesResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取LLM消息列表
+      tags:
+      - 对话
 swagger: "2.0"

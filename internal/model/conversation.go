@@ -9,8 +9,8 @@ type Conversation struct {
 	CreateTime time.Time `gorm:"datetime;autoCreateTime"`
 }
 
-func (c *Conversation) GetLLMMessages() ([]*LLMMessage, error) {
-	return GetLLMMessagesByConversationId(c.Id)
+func (c *Conversation) GetLLMMessages(start, limit int) ([]*LLMMessage, int64, error) {
+	return GetLLMMessagesByConversationId(c.Id, start, limit)
 }
 
 func CreateConversation(c *Conversation) error {
@@ -24,6 +24,20 @@ func GetConversationByUuid(uuid string) (*Conversation, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+func ListConversations(start, limit int) ([]*Conversation, int64, error) {
+	var conversations []*Conversation
+	var total int64
+	err := DB.Model(&Conversation{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = DB.Model(&Conversation{}).Order("id desc").Offset(start).Limit(limit).Find(&conversations).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return conversations, total, nil
 }
 
 func DeleteConversationByUuid(uuid string) error {
@@ -61,11 +75,16 @@ func GetLLMMessage(id int) (*LLMMessage, error) {
 	return &m, nil
 }
 
-func GetLLMMessagesByConversationId(id int) ([]*LLMMessage, error) {
+func GetLLMMessagesByConversationId(id int, start, limit int) ([]*LLMMessage, int64, error) {
 	var ms []*LLMMessage
-	err := DB.Where("conversation_id = ?", id).Find(&ms).Error
+	var total int64
+	err := DB.Model(&LLMMessage{}).Where("conversation_id = ?", id).Count(&total).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return ms, nil
+	err = DB.Where("conversation_id = ?", id).Order("id desc").Offset(start).Limit(limit).Find(&ms).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return ms, total, nil
 }

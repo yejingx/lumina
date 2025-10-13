@@ -81,6 +81,15 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	message.GET("/:message_id", s.handleGetMessage)
 	message.DELETE("/:message_id", s.handleDeleteMessage)
 
+	conversation := apiV1.Group("/conversation")
+	conversation.Use(SetConversationToContext())
+	conversation.GET("", s.handleListConversations)
+	conversation.POST("", s.handleCreateConversation)
+	conversation.GET("/:uuid", s.handleGetConversation)
+	conversation.DELETE("/:uuid", s.handleDeleteConversation)
+	conversation.GET("/message", s.handleListLLMMessages)
+	conversation.GET("/chat", s.handleChat)
+
 	v1Authed := apiV1.Group("")
 	// v1Authed.Use(NeedAuth(false))
 

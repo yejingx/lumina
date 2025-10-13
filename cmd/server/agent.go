@@ -91,7 +91,7 @@ func testAgent(query string) {
 	// Create a custom writer to parse SSE format data
 	customWriter := &SSEWriter{output: os.Stdout}
 
-	_, err := agent.RunStream(ctx, query, customWriter)
+	_, err := agent.RunStream(ctx, query, nil, customWriter)
 	if err != nil {
 		logrus.Errorf("Error running agent stream: %v", err)
 		return

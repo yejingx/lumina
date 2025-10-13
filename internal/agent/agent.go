@@ -127,7 +127,7 @@ func (a *Agent) Run(ctx context.Context, query string) (*LLMMessage, error) {
 	return messages[len(messages)-1], nil
 }
 
-func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) ([]*LLMMessage, error) {
+func (a *Agent) RunStream(ctx context.Context, query string, history []*LLMMessage, w io.Writer) ([]*LLMMessage, error) {
 	messages := make([]*LLMMessage, 0)
 
 	toolsDesc, _ := json.MarshalIndent(a.tools, "", "  ")
@@ -148,6 +148,10 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) ([]*LL
 	})
 
 	a.logger.Debugf("system prompt:\n%s", systemPrompt)
+
+	if len(history) > 0 {
+		messages = append(messages, history...)
+	}
 
 	messages = append(messages, &LLMMessage{
 		Role:    RoleUser,
@@ -180,8 +184,8 @@ func (a *Agent) RunStream(ctx context.Context, query string, w io.Writer) ([]*LL
 
 			// Write tool execution info to stream
 			msg := LLMMessage{
-				Role:    RoleAssistant,
-				ToolCalls:  []ToolCall{toolCall},
+				Role:      RoleAssistant,
+				ToolCalls: []ToolCall{toolCall},
 			}
 			msgData, _ := json.Marshal(msg)
 			w.Write([]byte("data: " + string(msgData) + "\n"))

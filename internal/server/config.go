@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -53,6 +54,7 @@ func DefaultConfig() *Config {
 		LLM: agent.LLMConfig{
 			Model:   "gpt-3.5-turbo",
 			BaseUrl: "https://api.openai.com/v1",
+			Timeout: 300 * time.Second,
 		},
 	}
 }

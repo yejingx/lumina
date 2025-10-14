@@ -49,10 +49,10 @@ func InitDB(dbConfig DBConfig) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{})
-	if err != nil {
-		return err
-	}
+    err := db.AutoMigrate(&User{})
+    if err != nil {
+        return err
+    }
 	err = db.AutoMigrate(&Job{})
 	if err != nil {
 		return err
@@ -77,12 +77,17 @@ func AutoMigrate(db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	err = db.AutoMigrate(&ChatMessage{})
-	if err != nil {
-		return err
-	}
+    err = db.AutoMigrate(&ChatMessage{})
+    if err != nil {
+        return err
+    }
 
-	return nil
+    // Ensure ChatMessage.answer uses a large text type to avoid overflow errors
+    // MySQL TEXT/LONGTEXT columns cannot have default values; tag has been updated.
+    // AutoMigrate does not always change existing column types, so we enforce it here.
+    _ = db.Exec("ALTER TABLE chat_messages MODIFY COLUMN answer LONGTEXT").Error
+
+    return nil
 }
 
 func InsertTestData(db *gorm.DB) error {

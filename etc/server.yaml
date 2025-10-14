@@ -16,3 +16,7 @@ s3:
   useSSL: true
   accessKeyID: zdVLmnfYFK8KtoMbTVEA
   secretAccessKey: qcyJQhNt6tZwYptfM2VnzWltegvOoA845F9QcRq8
+llm:
+  model: deepseek-ai/DeepSeek-V3.1-Terminus
+  apiKey: 22d76d7444577c4cc74da646f1ac317a
+  baseUrl: http://36.150.51.8:30001/v1

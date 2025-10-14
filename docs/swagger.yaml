@@ -1645,7 +1645,7 @@ paths:
       summary: 获取对话
       tags:
       - 对话
-  /v1/conversation/chat:
+  /v1/conversation/{uuid}/chat:
     post:
       consumes:
       - application/json
@@ -1678,7 +1678,7 @@ paths:
       summary: 聊天
       tags:
       - 对话
-  /v1/conversation/message:
+  /v1/conversation/{uuid}/message:
     get:
       consumes:
       - application/json

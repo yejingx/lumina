@@ -20,6 +20,9 @@ func SetConversationToContext() gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
+		} else if conversation == nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "conversation not found"})
+			return
 		}
 		c.Set(conversationKey, conversation)
 		c.Next()
@@ -158,7 +161,7 @@ func (s *Server) handleDeleteConversation(c *gin.Context) {
 // @Success 200 {object} dao.ListChatMessagesResponse "获取成功"
 // @Failure 400 {object} ErrorResponse "请求参数错误"
 // @Failure 500 {object} ErrorResponse "内部服务器错误"
-// @Router /v1/conversation/message [get]
+// @Router /v1/conversation/{uuid}/message [get]
 func (s *Server) handleListChatMessages(c *gin.Context) {
 	var req dao.ListChatMessagesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -235,7 +238,7 @@ OUTPUT REQUIREMENTS:
 // @Success 200 "聊天回复"
 // @Failure 400 {object} ErrorResponse "请求参数错误"
 // @Failure 500 {object} ErrorResponse "内部服务器错误"
-// @Router /v1/conversation/chat [post]
+// @Router /v1/conversation/{uuid}/chat [post]
 func (s *Server) handleChat(c *gin.Context) {
 	var req dao.ChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -266,6 +269,7 @@ func (s *Server) handleChat(c *gin.Context) {
 	a := agent.NewAgent("test", s.conf.LLM, 10, instruction)
 	agentThoughts, err := a.RunStream(c, req.Query, llmMessages, c.Writer)
 	if err != nil {
+		s.logger.Errorf("run agent stream failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

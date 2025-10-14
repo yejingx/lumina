@@ -2,7 +2,9 @@ package agent
 
 import (
 	"context"
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -24,6 +26,51 @@ type AgentThought struct {
 	Thought     string       `json:"thought,omitempty"`
 	Observation string       `json:"observation,omitempty"`
 	ToolCall    *ToolCall    `json:"toolCall,omitempty"`
+}
+
+// Value implements driver.Valuer interface for JSON serialization
+func (t AgentThought) Value() (driver.Value, error) {
+	return json.Marshal(t)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization
+func (t *AgentThought) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, t)
+}
+
+// AgentThoughtSlice is a custom type for handling []*AgentThought serialization
+type AgentThoughtSlice []*AgentThought
+
+// Value implements driver.Valuer interface for JSON serialization of slice
+func (s AgentThoughtSlice) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Scan implements sql.Scanner interface for JSON deserialization of slice
+func (s *AgentThoughtSlice) Scan(value any) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(bytes, s)
 }
 
 func mergeMessages(messages []*LLMMessage) string {

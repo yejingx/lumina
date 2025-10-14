@@ -1,9 +1,12 @@
 package model
 
 import (
+	"errors"
 	"time"
 
 	"lumina/internal/agent"
+
+	"gorm.io/gorm"
 )
 
 type Conversation struct {
@@ -25,6 +28,9 @@ func GetConversationByUuid(uuid string) (*Conversation, error) {
 	var c Conversation
 	err := DB.Where("uuid = ?", uuid).First(&c).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &c, nil
@@ -49,12 +55,12 @@ func DeleteConversationByUuid(uuid string) error {
 }
 
 type ChatMessage struct {
-	Id             int                   `gorm:"primaryKey"`
-	ConversationId int                   `gorm:"index"`
-	Query          string                `gorm:"default:''"`
-	Answer         string                `gorm:"default:''"`
-	AgentThoughts  []*agent.AgentThought `gorm:"type:json"`
-	CreateTime     time.Time             `gorm:"datetime;autoCreateTime"`
+    Id             int                     `gorm:"primaryKey"`
+    ConversationId int                     `gorm:"index"`
+    Query          string                  `gorm:"default:''"`
+    Answer         string                  `gorm:"type:longtext"`
+    AgentThoughts  agent.AgentThoughtSlice `gorm:"type:json"`
+    CreateTime     time.Time               `gorm:"datetime;autoCreateTime"`
 }
 
 func CreateChatMessage(m *ChatMessage) error {
@@ -69,6 +75,9 @@ func GetChatMessage(id int) (*ChatMessage, error) {
 	var m ChatMessage
 	err := DB.Where("id = ?", id).First(&m).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &m, nil

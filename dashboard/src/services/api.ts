@@ -197,3 +197,82 @@ export const workflowApi = {
 };
 
 export default api;
+
+// =========================
+// 智能助手 / 对话 API
+// =========================
+
+export type ConversationSpec = {
+  id: number;
+  uuid: string;
+  title?: string;
+  createTime: string;
+};
+
+export type ListConversationsResponse = {
+  items: ConversationSpec[];
+  total: number;
+};
+
+export type CreateConversationRequest = {
+  title?: string;
+};
+
+export type CreateConversationResponse = {
+  uuid: string;
+};
+
+export type ChatMessageSpec = {
+  id: number;
+  conversationId: number;
+  query: string;
+  answer?: string;
+  agentThoughts?: {
+    thought?: string;
+    observation?: string;
+    toolCall?: { name: string; args: string } | null;
+  }[];
+  createTime: string;
+};
+
+export type ListChatMessagesResponse = {
+  items: ChatMessageSpec[];
+  total: number;
+};
+
+export type ChatRequest = {
+  query: string;
+};
+
+export const conversationApi = {
+  // 列出对话
+  list: (params: ListParams): Promise<ListConversationsResponse> =>
+    api.get('/conversation', { params }),
+
+  // 创建对话
+  create: (data: CreateConversationRequest): Promise<CreateConversationResponse> =>
+    api.post('/conversation', data),
+
+  // 获取对话详情（通过 uuid）
+  get: (uuid: string): Promise<ConversationSpec> =>
+    api.get(`/conversation/${uuid}`),
+
+  // 删除对话
+  delete: (uuid: string): Promise<void> =>
+    api.delete(`/conversation/${uuid}`),
+
+  // 列出聊天消息
+  listMessages: (uuid: string, params: { start?: number; limit?: number }): Promise<ListChatMessagesResponse> =>
+    api.get(`/conversation/${uuid}/message`, { params }),
+
+  // 启动聊天 SSE 流
+  chatStream: (uuid: string, data: ChatRequest, signal?: AbortSignal): Promise<Response> =>
+    fetch(`/api/v1/conversation/${uuid}/chat`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        signal,
+      }
+    ),
+};

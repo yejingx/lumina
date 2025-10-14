@@ -9,6 +9,7 @@ import {
   PartitionOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
@@ -53,6 +54,11 @@ const MainLayout: React.FC = () => {
       key: '/users',
       icon: <UserOutlined />,
       label: '用户管理',
+    },
+    {
+      key: '/agent',
+      icon: <RobotOutlined />,
+      label: '智能助手',
     },
   ];
 

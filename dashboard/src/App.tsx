@@ -10,6 +10,7 @@ import { WorkflowList, WorkflowDetail } from './pages/workflow';
 import { AccessTokenList, AccessTokenDetail } from './pages/access-token';
 import { UserList } from './pages/user';
 import JobFormPage from './pages/job/JobFormPage';
+import AgentPage from './pages/agent/AgentPage';
 
 function App() {
   return (
@@ -43,6 +44,9 @@ function App() {
 
             {/* 用户路由 */}
             <Route path="users" element={<UserList />} />
+
+            {/* 智能助手 */}
+            <Route path="agent" element={<AgentPage />} />
           </Route>
         </Routes>
       </Router>

@@ -15,11 +15,11 @@ import (
 )
 
 type LLMConfig struct {
-	BaseUrl     string
-	ApiKey      string
-	Model       string
-	Temperature float64
-	Timeout     time.Duration
+	BaseUrl     string        `yaml:"baseUrl"`
+	ApiKey      string        `yaml:"apiKey"`
+	Model       string        `yaml:"model"`
+	Temperature float64       `yaml:"temperature"`
+	Timeout     time.Duration `yaml:"timeout"`
 }
 
 type LLMMessageRole string

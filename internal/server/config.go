@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"lumina/internal/agent"
 	"lumina/internal/model"
 )
 
@@ -30,12 +31,13 @@ func (c S3Config) VisitPrefix() string {
 }
 
 type Config struct {
-	Addr      string         `yaml:"addr"`
-	SSLCert   string         `yaml:"sslCert"`
-	SSLKey    string         `yaml:"sslKey"`
-	JwtSecret string         `yaml:"jwtSecret"`
-	DB        model.DBConfig `yaml:"db"`
-	S3        S3Config       `yaml:"s3"`
+	Addr      string          `yaml:"addr"`
+	SSLCert   string          `yaml:"sslCert"`
+	SSLKey    string          `yaml:"sslKey"`
+	JwtSecret string          `yaml:"jwtSecret"`
+	DB        model.DBConfig  `yaml:"db"`
+	S3        S3Config        `yaml:"s3"`
+	LLM       agent.LLMConfig `yaml:"llm"`
 }
 
 func DefaultConfig() *Config {
@@ -47,6 +49,10 @@ func DefaultConfig() *Config {
 			Endpoint: "127.0.0.1:9000",
 			UseSSL:   false,
 			Region:   "us-east-1",
+		},
+		LLM: agent.LLMConfig{
+			Model:   "gpt-3.5-turbo",
+			BaseUrl: "https://api.openai.com/v1",
 		},
 	}
 }

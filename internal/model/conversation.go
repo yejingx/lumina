@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"lumina/internal/agent"
+)
 
 type Conversation struct {
 	Id         int       `gorm:"primaryKey"`
@@ -9,8 +13,8 @@ type Conversation struct {
 	CreateTime time.Time `gorm:"datetime;autoCreateTime"`
 }
 
-func (c *Conversation) GetLLMMessages(start, limit int) ([]*LLMMessage, int64, error) {
-	return GetLLMMessagesByConversationId(c.Id, start, limit)
+func (c *Conversation) GetChatMessages(start, limit int) ([]*ChatMessage, int64, error) {
+	return GetChatMessagesByConversationId(c.Id, start, limit)
 }
 
 func CreateConversation(c *Conversation) error {
@@ -44,30 +48,25 @@ func DeleteConversationByUuid(uuid string) error {
 	return DB.Where("uuid = ?", uuid).Delete(&Conversation{}).Error
 }
 
-type ToolCall struct {
-	Name string `json:"name" gorm:"default:''"`
-	Args string `json:"args" gorm:"default:''"`
+type ChatMessage struct {
+	Id             int                   `gorm:"primaryKey"`
+	ConversationId int                   `gorm:"index"`
+	Query          string                `gorm:"default:''"`
+	Answer         string                `gorm:"default:''"`
+	AgentThoughts  []*agent.AgentThought `gorm:"type:json"`
+	CreateTime     time.Time             `gorm:"datetime;autoCreateTime"`
 }
 
-type LLMMessage struct {
-	Id             int       `gorm:"primaryKey"`
-	ConversationId int       `gorm:"index"`
-	Role           string    `gorm:"default:''"`
-	Content        string    `gorm:"default:''"`
-	ToolCall       *ToolCall `gorm:"type:json"`
-	CreateTime     time.Time `gorm:"datetime;autoCreateTime"`
-}
-
-func CreateLLMMessage(m *LLMMessage) error {
+func CreateChatMessage(m *ChatMessage) error {
 	return DB.Create(m).Error
 }
 
-func DeleteLLMMessage(id int) error {
-	return DB.Where("id = ?", id).Delete(&LLMMessage{}).Error
+func DeleteChatMessage(id int) error {
+	return DB.Where("id = ?", id).Delete(&ChatMessage{}).Error
 }
 
-func GetLLMMessage(id int) (*LLMMessage, error) {
-	var m LLMMessage
+func GetChatMessage(id int) (*ChatMessage, error) {
+	var m ChatMessage
 	err := DB.Where("id = ?", id).First(&m).Error
 	if err != nil {
 		return nil, err
@@ -75,10 +74,10 @@ func GetLLMMessage(id int) (*LLMMessage, error) {
 	return &m, nil
 }
 
-func GetLLMMessagesByConversationId(id int, start, limit int) ([]*LLMMessage, int64, error) {
-	var ms []*LLMMessage
+func GetChatMessagesByConversationId(id int, start, limit int) ([]*ChatMessage, int64, error) {
+	var ms []*ChatMessage
 	var total int64
-	err := DB.Model(&LLMMessage{}).Where("conversation_id = ?", id).Count(&total).Error
+	err := DB.Model(&ChatMessage{}).Where("conversation_id = ?", id).Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}

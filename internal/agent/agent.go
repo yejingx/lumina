@@ -10,6 +10,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ThoughtPhase string
+
+const (
+	ThoughtPhaseThought     ThoughtPhase = "thought"
+	ThoughtPhaseTool        ThoughtPhase = "tool"
+	ThoughtPhaseObservation ThoughtPhase = "observation"
+)
+
+type AgentThought struct {
+	Phase       ThoughtPhase `json:"phase,omitempty"`
+	ID          string       `json:"id,omitempty"`
+	Thought     string       `json:"thought,omitempty"`
+	Observation string       `json:"observation,omitempty"`
+	ToolCall    *ToolCall    `json:"toolCall,omitempty"`
+}
+
 func mergeMessages(messages []*LLMMessage) string {
 	tmp := make([]string, 0, len(messages))
 	for _, msg := range messages {
@@ -98,36 +114,38 @@ func (a *Agent) Run(ctx context.Context, query string) (*LLMMessage, error) {
 		if len(resp.ToolCalls) == 0 {
 			break
 		}
-		for _, toolCall := range resp.ToolCalls {
-			tool, ok := a.tools[toolCall.ToolName]
-			if !ok {
-				messages = append(messages, &LLMMessage{
-					Role:    RoleTool,
-					Content: fmt.Sprintf("Tool %s not found", toolCall.ToolName),
-				})
-				continue
-			}
-			toolRes, err := tool.Func(toolCall.Id, toolCall.Args)
-			if err != nil {
-				messages = append(messages, &LLMMessage{
-					Role:    RoleAssistant,
-					Content: fmt.Sprintf("Call tool %s failed: %s.", toolCall.ToolName, err.Error()),
-				})
-				continue
-			}
-			toolResStr, _ := json.MarshalIndent(toolRes, "", "  ")
+		toolCall := resp.ToolCalls[0]
+		tool, ok := a.tools[toolCall.ToolName]
+		if !ok {
 			messages = append(messages, &LLMMessage{
-				Role:       RoleTool,
-				Content:    fmt.Sprintf("Tool %s returned: %s", toolCall.ToolName, string(toolResStr)),
-				ToolCallId: toolCall.Id,
+				Role:    RoleTool,
+				Content: fmt.Sprintf("Tool %s not found", toolCall.ToolName),
 			})
+			continue
 		}
+		toolRes, err := tool.Func(toolCall.Id, toolCall.Args)
+		if err != nil {
+			messages = append(messages, &LLMMessage{
+				Role:    RoleAssistant,
+				Content: fmt.Sprintf("Call tool %s failed: %s.", toolCall.ToolName, err.Error()),
+			})
+			continue
+		}
+		toolResStr, _ := json.MarshalIndent(toolRes, "", "  ")
+		messages = append(messages, &LLMMessage{
+			Role:       RoleTool,
+			Content:    fmt.Sprintf("Tool %s returned: %s", toolCall.ToolName, string(toolResStr)),
+			ToolCallId: toolCall.Id,
+		})
 	}
 
 	return messages[len(messages)-1], nil
 }
 
-func (a *Agent) RunStream(ctx context.Context, query string, history []*LLMMessage, w io.Writer) ([]*LLMMessage, error) {
+func (a *Agent) RunStream(ctx context.Context, query string, history []*LLMMessage, w io.Writer) ([]*AgentThought, error) {
+	sseWriter := NewSSEMessageWriter(w)
+	defer sseWriter.Close()
+
 	messages := make([]*LLMMessage, 0)
 
 	toolsDesc, _ := json.MarshalIndent(a.tools, "", "  ")
@@ -158,60 +176,84 @@ func (a *Agent) RunStream(ctx context.Context, query string, history []*LLMMessa
 		Content: query,
 	})
 
-	// Handle streaming with tool call support
+	agentThoughts := make([]*AgentThought, 0)
+
 	for i := 0; i < a.maxIterations; i++ {
-		response, err := a.llm.ChatCompletionStream(ctx, messages, tools, w)
+		response, err := a.llm.ChatCompletionStream(ctx, messages, tools, sseWriter)
 		if err != nil {
 			return nil, fmt.Errorf("streaming chat completion failed: %w", err)
 		}
 
-		// Add the assistant's response to the conversation
 		messages = append(messages, response)
 
-		// If no tool calls, we're done
 		if len(response.ToolCalls) == 0 {
+			agentThoughts = append(agentThoughts, &AgentThought{
+				Phase:   ThoughtPhaseThought,
+				ID:      response.ID,
+				Thought: response.Content,
+			})
 			break
 		}
 
-		// Execute tool calls and add their results
-		for _, toolCall := range response.ToolCalls {
-			tool, exists := a.tools[toolCall.ToolName]
-			// fmt.Printf("tool call: %+v\n", toolCall)
-			if !exists {
-				a.logger.Warnf("tool %s not found", toolCall.ToolName)
-				continue
-			}
+		toolCall := response.ToolCalls[0]
 
-			// Write tool execution info to stream
-			msg := LLMMessage{
-				Role:      RoleAssistant,
-				ToolCalls: []ToolCall{toolCall},
-			}
-			msgData, _ := json.Marshal(msg)
-			w.Write([]byte("data: " + string(msgData) + "\n"))
-
-			a.logger.Debugf("executing tool %s with args: %s", toolCall.ToolName, toolCall.Args)
-			result, err := tool.Func(toolCall.Id, toolCall.Args)
-			if err != nil {
-				a.logger.Errorf("tool %s execution failed: %v", toolCall.ToolName, err)
-				// Add tool result to messages
-				messages = append(messages, &LLMMessage{
-					Role:       RoleTool,
-					Content:    fmt.Sprintf("Error: %v", err),
-					ToolCallId: toolCall.Id,
-				})
-			} else {
-				// Convert result to JSON string for content
-				resultJSON, _ := json.MarshalIndent(result, "", "  ")
-				// Add tool result to messages
-				messages = append(messages, &LLMMessage{
-					Role:       RoleTool,
-					Content:    string(resultJSON),
-					ToolCallId: toolCall.Id,
-				})
-			}
+		thought := &AgentThought{
+			Phase:    ThoughtPhaseTool,
+			ID:       response.ID,
+			Thought:  response.Content,
+			ToolCall: &toolCall,
 		}
+
+		err = sseWriter.Write(thought)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write tool call: %w", err)
+		}
+
+		tool, exists := a.tools[toolCall.ToolName]
+		if !exists {
+			content := fmt.Sprintf("Error: tool %s not found", toolCall.ToolName)
+			messages = append(messages, &LLMMessage{
+				Role:       RoleTool,
+				Content:    content,
+				ToolCallId: toolCall.Id,
+			})
+			thought.Observation = content
+			err = sseWriter.Write(thought)
+			if err != nil {
+				return nil, fmt.Errorf("failed to write tool call: %w", err)
+			}
+			agentThoughts = append(agentThoughts, thought)
+			continue
+		}
+
+		a.logger.Debugf("executing tool %s with args: %s", toolCall.ToolName, toolCall.Args)
+		result, err := tool.Func(toolCall.Id, toolCall.Args)
+		thought.Phase = ThoughtPhaseObservation
+		if err != nil {
+			a.logger.Errorf("tool %s execution failed: %v", toolCall.ToolName, err)
+			content := fmt.Sprintf("Call tool %s failed: %s.", toolCall.ToolName, err.Error())
+			messages = append(messages, &LLMMessage{
+				Role:       RoleTool,
+				Content:    content,
+				ToolCallId: toolCall.Id,
+			})
+			thought.Observation = content
+		} else {
+			resultJSON, _ := json.MarshalIndent(result, "", "  ")
+			content := string(resultJSON)
+			messages = append(messages, &LLMMessage{
+				Role:       RoleTool,
+				Content:    content,
+				ToolCallId: toolCall.Id,
+			})
+			thought.Observation = content
+		}
+		err = sseWriter.Write(thought)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write tool call: %w", err)
+		}
+		agentThoughts = append(agentThoughts, thought)
 	}
 
-	return messages[2:], nil
+	return agentThoughts, nil
 }

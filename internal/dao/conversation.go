@@ -2,8 +2,9 @@ package dao
 
 import (
 	"errors"
-	"lumina/internal/model"
 	"time"
+
+	"lumina/internal/model"
 )
 
 type ConversationSpec struct {
@@ -54,78 +55,76 @@ type ListConversationsResponse struct {
 	Total int64               `json:"total"`
 }
 
-type ToolCall struct {
+type ToolCallSpec struct {
 	Name string `json:"name"`
 	Args string `json:"args"`
 }
 
-func (t *ToolCall) ToModel() *model.ToolCall {
-	if t == nil {
-		return nil
-	}
-	return &model.ToolCall{
-		Name: t.Name,
-		Args: t.Args,
-	}
+type AgentThoughtSpec struct {
+	Thought     string        `json:"thought,omitempty"`
+	Observation string        `json:"observation,omitempty"`
+	ToolCall    *ToolCallSpec `json:"toolCall,omitempty"`
 }
 
-func FromToolCallModel(t *model.ToolCall) *ToolCall {
-	if t == nil {
-		return nil
-	}
-	return &ToolCall{
-		Name: t.Name,
-		Args: t.Args,
-	}
+type ChatMessageSpec struct {
+	Id             int                 `json:"id"`
+	ConversationId int                 `json:"conversationId"`
+	Query          string              `json:"query"`
+	Answer         string              `json:"answer,omitempty"`
+	AgentThoughts  []*AgentThoughtSpec `json:"agentThoughts,omitempty"`
+	CreateTime     string              `json:"createTime"`
 }
 
-type LLMMessageSpec struct {
-	Id             int       `json:"id"`
-	ConversationId int       `json:"conversationId"`
-	Role           string    `json:"role"`
-	Content        string    `json:"content"`
-	ToolCall       *ToolCall `json:"toolCall,omitempty"`
-	CreateTime     string    `json:"createTime"`
-}
-
-func (m *LLMMessageSpec) ToModel() *model.LLMMessage {
+func (m *ChatMessageSpec) ToModel() *model.ChatMessage {
 	if m == nil {
 		return nil
 	}
-	return &model.LLMMessage{
+	return &model.ChatMessage{
 		Id:             m.Id,
 		ConversationId: m.ConversationId,
-		Role:           m.Role,
-		Content:        m.Content,
-		ToolCall:       m.ToolCall.ToModel(),
+		Query:          m.Query,
+		Answer:         m.Answer,
 	}
 }
 
-func FromLLMMessageModel(m *model.LLMMessage) *LLMMessageSpec {
+func FromChatMessageModel(m *model.ChatMessage) *ChatMessageSpec {
 	if m == nil {
 		return nil
 	}
-	return &LLMMessageSpec{
+	spec := &ChatMessageSpec{
 		Id:             m.Id,
 		ConversationId: m.ConversationId,
-		Role:           m.Role,
-		Content:        m.Content,
-		ToolCall:       FromToolCallModel(m.ToolCall),
+		Query:          m.Query,
+		Answer:         m.Answer,
 		CreateTime:     m.CreateTime.Format(time.RFC3339),
 	}
+	if len(m.AgentThoughts) > 0 {
+		spec.AgentThoughts = make([]*AgentThoughtSpec, 0, len(m.AgentThoughts))
+		for _, t := range m.AgentThoughts {
+			spec.AgentThoughts = append(spec.AgentThoughts, &AgentThoughtSpec{
+				Thought:     t.Thought,
+				Observation: t.Observation,
+				ToolCall: &ToolCallSpec{
+					Name: t.ToolCall.ToolName,
+					Args: t.ToolCall.Args,
+				},
+			})
+		}
+	}
+	return spec
 }
 
-type ListLLMMessagesRequest struct {
+type ListChatMessagesRequest struct {
 	Start int `json:"start" form:"start" binding:"min=0"`
 	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
 }
 
-// ListLLMMessagesResponse represents response for listing LLM messages
-type ListLLMMessagesResponse struct {
-	Items []*LLMMessageSpec `json:"items"`
-	Total int64             `json:"total"`
+// ListChatMessagesResponse represents response for listing chat messages
+type ListChatMessagesResponse struct {
+	Items []*ChatMessageSpec `json:"items"`
+	Total int64              `json:"total"`
 }
 
-type ChatMessage struct {
+type ChatRequest struct {
 	Query string `json:"query" binding:"required"`
 }

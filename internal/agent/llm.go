@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type LLMConfig struct {
@@ -30,7 +32,8 @@ const (
 )
 
 type LLMMessage struct {
-	Role       LLMMessageRole `json:"role"`
+	ID         string         `json:"id,omitempty"`
+	Role       LLMMessageRole `json:"role,omitempty"`
 	Content    string         `json:"content,omitempty"`
 	ToolCalls  []ToolCall     `json:"tool_calls,omitempty"`
 	ToolCallId string         `json:"tool_call_id,omitempty"`
@@ -129,10 +132,6 @@ func NewLLM(conf LLMConfig) *LLM {
 		conf: conf,
 	}
 }
-
-// func (llm *LLM) Completion(ctx context.Context, prompt string) (*LLMMessage, error) {
-
-// }
 
 func (llm *LLM) ChatCompletion(ctx context.Context, messages []*LLMMessage, tools []*Tool) (*LLMMessage, error) {
 	// Convert messages to OpenAI format
@@ -236,8 +235,30 @@ func (llm *LLM) ChatCompletion(ctx context.Context, messages []*LLMMessage, tool
 	}, nil
 }
 
+type SSEMessageWriter struct {
+	w io.Writer
+}
+
+func NewSSEMessageWriter(w io.Writer) *SSEMessageWriter {
+	return &SSEMessageWriter{w: w}
+}
+
+func (w *SSEMessageWriter) Write(m *AgentThought) error {
+	data, _ := json.Marshal(m)
+	_, err := w.w.Write([]byte("data: " + string(data) + "\n"))
+	return err
+}
+
+func (w *SSEMessageWriter) Close() error {
+	_, err := w.w.Write([]byte("data: [DONE]"))
+	return err
+}
+
 // ChatCompletionStream performs streaming chat completion and returns the complete response
-func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage, tools []*Tool, writer io.Writer) (*LLMMessage, error) {
+func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage, tools []*Tool, writer *SSEMessageWriter) (*LLMMessage, error) {
+	// Generate unique ID for the stream
+	id := uuid.New().String()
+
 	// Convert messages to OpenAI format
 	openAIMessages := make([]OpenAIMessage, len(messages))
 	for i, msg := range messages {
@@ -330,7 +351,6 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 		if !ok {
 			continue
 		} else if data == "[DONE]" {
-			writer.Write([]byte("data: [DONE]\n"))
 			break
 		}
 
@@ -353,13 +373,12 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 		// Handle content
 		if delta.Content != "" {
 			completeContent.WriteString(delta.Content)
-			// Write content to output stream
-			msg := LLMMessage{
-				Role:    LLMMessageRole(currentRole),
-				Content: delta.Content,
-			}
-			msgData, _ := json.Marshal(msg)
-			_, err := writer.Write([]byte("data: " + string(msgData) + "\n"))
+
+			err := writer.Write(&AgentThought{
+				Phase:   ThoughtPhaseThought,
+				ID:      id,
+				Thought: delta.Content,
+			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to write content: %w", err)
 			}
@@ -405,6 +424,7 @@ func (llm *LLM) ChatCompletionStream(ctx context.Context, messages []*LLMMessage
 
 	// Return the complete message
 	return &LLMMessage{
+		ID:        id,
 		Role:      LLMMessageRole(currentRole),
 		Content:   completeContent.String(),
 		ToolCalls: toolCalls,

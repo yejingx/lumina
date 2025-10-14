@@ -1621,9 +1621,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/conversation/message": {
-            "get": {
-                "description": "根据conversationId分页获取LLM消息列表",
+        "/v1/conversation/chat": {
+            "post": {
+                "description": "发送聊天消息并获取回复",
                 "consumes": [
                     "application/json"
                 ],
@@ -1633,7 +1633,57 @@ const docTemplate = `{
                 "tags": [
                     "对话"
                 ],
-                "summary": "获取LLM消息列表",
+                "summary": "聊天",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "对话ID",
+                        "name": "conversationId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "聊天请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.ChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "聊天回复"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/conversation/message": {
+            "get": {
+                "description": "根据conversationId分页获取聊天消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "对话"
+                ],
+                "summary": "获取聊天消息列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1661,7 +1711,7 @@ const docTemplate = `{
                     "200": {
                         "description": "获取成功",
                         "schema": {
-                            "$ref": "#/definitions/dao.ListLLMMessagesResponse"
+                            "$ref": "#/definitions/dao.ListChatMessagesResponse"
                         }
                     },
                     "400": {
@@ -1820,6 +1870,57 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "dao.AgentThoughtSpec": {
+            "type": "object",
+            "properties": {
+                "observation": {
+                    "type": "string"
+                },
+                "thought": {
+                    "type": "string"
+                },
+                "toolCall": {
+                    "$ref": "#/definitions/dao.ToolCallSpec"
+                }
+            }
+        },
+        "dao.ChatMessageSpec": {
+            "type": "object",
+            "properties": {
+                "agentThoughts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.AgentThoughtSpec"
+                    }
+                },
+                "answer": {
+                    "type": "string"
+                },
+                "conversationId": {
+                    "type": "integer"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.ChatRequest": {
+            "type": "object",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "query": {
+                    "type": "string"
                 }
             }
         },
@@ -2150,29 +2251,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dao.LLMMessageSpec": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "conversationId": {
-                    "type": "integer"
-                },
-                "createTime": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "toolCall": {
-                    "$ref": "#/definitions/dao.ToolCall"
-                }
-            }
-        },
         "dao.ListAccessTokenResponse": {
             "type": "object",
             "properties": {
@@ -2180,6 +2258,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dao.AccessTokenSpec"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dao.ListChatMessagesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.ChatMessageSpec"
                     }
                 },
                 "total": {
@@ -2222,20 +2314,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dao.JobSpec"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dao.ListLLMMessagesResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dao.LLMMessageSpec"
                     }
                 },
                 "total": {
@@ -2383,7 +2461,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dao.ToolCall": {
+        "dao.ToolCallSpec": {
             "type": "object",
             "properties": {
                 "args": {

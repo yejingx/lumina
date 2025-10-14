@@ -116,23 +116,24 @@ func (w *SSEWriter) Write(p []byte) (n int, err error) {
 		}
 
 		// Parse JSON message
-		var msg agent.LLMMessage
+		var msg agent.AgentThought
 		if err := json.Unmarshal([]byte(jsonStr), &msg); err != nil {
 			// If parsing fails, just write original data
 			return w.output.Write(p)
 		}
 
-		// Print content if available
-		if msg.Content != "" {
-			w.output.Write([]byte(msg.Content))
-		}
-
-		// Print tool calls if available
-		if len(msg.ToolCalls) > 0 {
-			for _, toolCall := range msg.ToolCalls {
-				toolInfo := fmt.Sprintf("\n\n🔧 调用工具: %s, 参数: %s\n\n", toolCall.ToolName, toolCall.Args)
+		switch msg.Phase {
+		case agent.ThoughtPhaseThought:
+			if msg.Thought != "" {
+				w.output.Write([]byte(msg.Thought))
+			}
+		case agent.ThoughtPhaseTool:
+			if msg.ToolCall != nil {
+				toolInfo := fmt.Sprintf("\n\n🔧 调用工具: %s, 参数: %s\n\n", msg.ToolCall.ToolName, msg.ToolCall.Args)
 				w.output.Write([]byte(toolInfo))
 			}
+		case agent.ThoughtPhaseObservation:
+			w.output.Write([]byte(msg.Observation))
 		}
 
 		return len(p), nil

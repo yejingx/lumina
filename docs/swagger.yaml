@@ -14,6 +14,39 @@ definitions:
     required:
     - accessToken
     type: object
+  dao.AgentThoughtSpec:
+    properties:
+      observation:
+        type: string
+      thought:
+        type: string
+      toolCall:
+        $ref: '#/definitions/dao.ToolCallSpec'
+    type: object
+  dao.ChatMessageSpec:
+    properties:
+      agentThoughts:
+        items:
+          $ref: '#/definitions/dao.AgentThoughtSpec'
+        type: array
+      answer:
+        type: string
+      conversationId:
+        type: integer
+      createTime:
+        type: string
+      id:
+        type: integer
+      query:
+        type: string
+    type: object
+  dao.ChatRequest:
+    properties:
+      query:
+        type: string
+    required:
+    - query
+    type: object
   dao.ConversationSpec:
     properties:
       createTime:
@@ -233,26 +266,20 @@ definitions:
     - updateTime
     - uuid
     type: object
-  dao.LLMMessageSpec:
-    properties:
-      content:
-        type: string
-      conversationId:
-        type: integer
-      createTime:
-        type: string
-      id:
-        type: integer
-      role:
-        type: string
-      toolCall:
-        $ref: '#/definitions/dao.ToolCall'
-    type: object
   dao.ListAccessTokenResponse:
     properties:
       accessTokens:
         items:
           $ref: '#/definitions/dao.AccessTokenSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListChatMessagesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.ChatMessageSpec'
         type: array
       total:
         type: integer
@@ -280,15 +307,6 @@ definitions:
       items:
         items:
           $ref: '#/definitions/dao.JobSpec'
-        type: array
-      total:
-        type: integer
-    type: object
-  dao.ListLLMMessagesResponse:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/dao.LLMMessageSpec'
         type: array
       total:
         type: integer
@@ -386,7 +404,7 @@ definitions:
       uuid:
         type: string
     type: object
-  dao.ToolCall:
+  dao.ToolCallSpec:
     properties:
       args:
         type: string
@@ -1627,11 +1645,44 @@ paths:
       summary: 获取对话
       tags:
       - 对话
+  /v1/conversation/chat:
+    post:
+      consumes:
+      - application/json
+      description: 发送聊天消息并获取回复
+      parameters:
+      - description: 对话ID
+        in: query
+        name: conversationId
+        required: true
+        type: integer
+      - description: 聊天请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dao.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 聊天回复
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 聊天
+      tags:
+      - 对话
   /v1/conversation/message:
     get:
       consumes:
       - application/json
-      description: 根据conversationId分页获取LLM消息列表
+      description: 根据conversationId分页获取聊天消息列表
       parameters:
       - description: 对话ID
         in: query
@@ -1654,7 +1705,7 @@ paths:
         "200":
           description: 获取成功
           schema:
-            $ref: '#/definitions/dao.ListLLMMessagesResponse'
+            $ref: '#/definitions/dao.ListChatMessagesResponse'
         "400":
           description: 请求参数错误
           schema:
@@ -1663,7 +1714,7 @@ paths:
           description: 内部服务器错误
           schema:
             $ref: '#/definitions/server.ErrorResponse'
-      summary: 获取LLM消息列表
+      summary: 获取聊天消息列表
       tags:
       - 对话
 swagger: "2.0"

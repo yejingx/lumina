@@ -87,7 +87,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	conversation.POST("", s.handleCreateConversation)
 	conversation.GET("/:uuid", s.handleGetConversation)
 	conversation.DELETE("/:uuid", s.handleDeleteConversation)
-	conversation.GET("/message", s.handleListLLMMessages)
+	conversation.GET("/message", s.handleListChatMessages)
 	conversation.GET("/chat", s.handleChat)
 
 	v1Authed := apiV1.Group("")

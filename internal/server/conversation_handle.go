@@ -225,7 +225,8 @@ DO NOT BE LAZY! You must continue analyzing until you have exhausted all ` +
 OUTPUT REQUIREMENTS:
 - Provide a clear, descriptive title based on actual content
 - Summarize the site's primary purpose in 1-2 sentences
-- List 5-10 key insights that reveal important aspects of the site`
+- List 5-10 key insights that reveal important aspects of the site
+- Response in Markdown format`
 
 // handleChat 聊天
 // @Summary 聊天

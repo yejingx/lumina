@@ -61,6 +61,8 @@ type ToolCallSpec struct {
 }
 
 type AgentThoughtSpec struct {
+	Phase       string        `json:"phase,omitempty"`
+	ID          string        `json:"id,omitempty"`
 	Thought     string        `json:"thought,omitempty"`
 	Observation string        `json:"observation,omitempty"`
 	ToolCall    *ToolCallSpec `json:"toolCall,omitempty"`
@@ -101,14 +103,19 @@ func FromChatMessageModel(m *model.ChatMessage) *ChatMessageSpec {
 	if len(m.AgentThoughts) > 0 {
 		spec.AgentThoughts = make([]*AgentThoughtSpec, 0, len(m.AgentThoughts))
 		for _, t := range m.AgentThoughts {
-			spec.AgentThoughts = append(spec.AgentThoughts, &AgentThoughtSpec{
+			th := &AgentThoughtSpec{
+				ID:          t.ID,
+				Phase:       string(t.Phase),
 				Thought:     t.Thought,
 				Observation: t.Observation,
-				ToolCall: &ToolCallSpec{
+			}
+			if t.ToolCall != nil {
+				th.ToolCall = &ToolCallSpec{
 					Name: t.ToolCall.ToolName,
 					Args: t.ToolCall.Args,
-				},
-			})
+				}
+			}
+			spec.AgentThoughts = append(spec.AgentThoughts, th)
 		}
 	}
 	return spec

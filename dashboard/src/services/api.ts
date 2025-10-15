@@ -228,6 +228,8 @@ export type ChatMessageSpec = {
   query: string;
   answer?: string;
   agentThoughts?: {
+    id: string;
+    phase?: string;
     thought?: string;
     observation?: string;
     toolCall?: { name: string; args: string } | null;
@@ -266,13 +268,12 @@ export const conversationApi = {
     api.get(`/conversation/${uuid}/message`, { params }),
 
   // 启动聊天 SSE 流
-  chatStream: (uuid: string, data: ChatRequest, signal?: AbortSignal): Promise<Response> =>
+  chatStream: (uuid: string, data: ChatRequest): Promise<Response> =>
     fetch(`/api/v1/conversation/${uuid}/chat`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-        signal,
       }
     ),
 };

@@ -135,3 +135,7 @@ type ListChatMessagesResponse struct {
 type ChatRequest struct {
 	Query string `json:"query" binding:"required"`
 }
+
+type GenChatTitleResponse struct {
+	Title string `json:"title" binding:"required"`
+}

@@ -1847,6 +1847,50 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/conversation/{uuid}/title": {
+            "post": {
+                "description": "根据聊天历史生成聊天标题",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "对话"
+                ],
+                "summary": "生成聊天标题",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "对话ID",
+                        "name": "conversationId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "聊天标题",
+                        "schema": {
+                            "$ref": "#/definitions/dao.GenChatTitleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1876,7 +1920,13 @@ const docTemplate = `{
         "dao.AgentThoughtSpec": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "string"
+                },
                 "observation": {
+                    "type": "string"
+                },
+                "phase": {
                     "type": "string"
                 },
                 "thought": {
@@ -2198,6 +2248,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.GenChatTitleResponse": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "title": {
                     "type": "string"
                 }
             }

@@ -276,4 +276,8 @@ export const conversationApi = {
         body: JSON.stringify(data),
       }
     ),
+
+  // 生成聊天标题
+  genTitle: (uuid: string): Promise<{ title: string }> =>
+    api.post(`/conversation/${uuid}/title`),
 };

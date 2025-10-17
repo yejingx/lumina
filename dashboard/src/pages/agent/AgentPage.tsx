@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Layout, List, Input, Button, Typography, message as antdMessage, Avatar, Popconfirm, Collapse } from 'antd';
 import { EditOutlined, SendOutlined, UserOutlined, RobotOutlined, DeleteOutlined } from '@ant-design/icons';
 import ReactMarkdown, { type Components } from 'react-markdown';
+import './AgentPage.css';
 import { conversationApi, type ConversationSpec, type ListConversationsResponse, type ChatMessageSpec, type ListChatMessagesResponse } from '../../services/api';
 import type { ListParams } from '../../types';
 
@@ -198,7 +199,11 @@ const AgentPage: React.FC = () => {
       let newlineIndex: number;
       while (reader && !stopStreaming) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // 流自然结束（未显式发送 [DONE]），也视为完成
+          stopStreaming = true;
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
         // 处理所有完整行；保留未完成的最后一行
         while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
@@ -234,6 +239,21 @@ const AgentPage: React.FC = () => {
         // 流式接收过程中，持续滚动到底部
         contentRef.current?.scrollTo({ top: contentRef.current.scrollHeight, behavior: 'smooth' });
       }
+
+      // 流结束后（收到 [DONE]），若当前对话标题为空则生成并更新标题
+      if (stopStreaming && selected && (!selected.title || !selected.title.trim())) {
+        try {
+          const { title } = await conversationApi.genTitle(selected.uuid);
+          if (title && title.trim()) {
+            setConversations((prev) => prev.map((c) => (
+              c.uuid === selected.uuid ? { ...c, title } : c
+            )));
+            setSelected((prev) => (prev && prev.uuid === selected.uuid ? { ...prev, title } : prev));
+          }
+        } catch (e) {
+          console.error('生成对话标题失败:', e);
+        }
+      }
     } catch (err) {
       antdMessage.error('发送或接收失败');
     }
@@ -241,7 +261,7 @@ const AgentPage: React.FC = () => {
 
   const handleCreateConversation = async () => {
     try {
-      const resp = await conversationApi.create({ title: '新对话' });
+      const resp = await conversationApi.create({});
       const conv = await conversationApi.get(resp.uuid);
       setConversations((prev) => [conv, ...prev]);
       setSelected(conv);
@@ -285,6 +305,7 @@ const AgentPage: React.FC = () => {
             dataSource={conversations}
             renderItem={(item) => (
               <List.Item
+                className="agent-conv-item"
                 style={{
                   cursor: 'pointer',
                   background: selected?.id === item.id ? '#f5f5f5' : undefined,
@@ -300,7 +321,7 @@ const AgentPage: React.FC = () => {
                       onConfirm={() => handleDeleteConversation(item)}
                     >
                       <DeleteOutlined
-                        style={{ color: '#ff4d4f', fontSize: 16 }}
+                        style={{ color: '#ff4d4f', fontSize: 16}}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </Popconfirm>
@@ -308,7 +329,21 @@ const AgentPage: React.FC = () => {
                 ]}
               >
                 <List.Item.Meta
-                  title={<Text strong style={{ fontSize: 16 }}>{item.title || item.uuid}</Text>}
+                  title={
+                    <Text
+                      strong
+                      ellipsis={{ tooltip: true }}
+                      style={{
+                        fontSize: 16,
+                        display: 'block',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.title || item.uuid}
+                    </Text>
+                  }
                 />
               </List.Item>
             )}

@@ -1,7 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -253,19 +255,7 @@ func (s *Server) handleChat(c *gin.Context) {
 		return
 	}
 
-	llmMessages := make([]*agent.LLMMessage, 0, 2*len(messages))
-	for _, msg := range messages {
-		llmMessages = append(llmMessages, &agent.LLMMessage{
-			Role:    agent.RoleUser,
-			Content: msg.Query,
-		})
-		if msg.Answer != "" {
-			llmMessages = append(llmMessages, &agent.LLMMessage{
-				Role:    agent.RoleAssistant,
-				Content: msg.Answer,
-			})
-		}
-	}
+	llmMessages := toLLMMessages(messages)
 
 	a := agent.NewAgent("test", s.conf.LLM, 10, instruction)
 	agentThoughts, err := a.RunStream(c, req.Query, llmMessages, c.Writer)
@@ -290,4 +280,84 @@ func (s *Server) handleChat(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+}
+
+func toLLMMessages(messages []*model.ChatMessage) []*agent.LLMMessage {
+	llmMessages := make([]*agent.LLMMessage, 0, 2*len(messages))
+	for _, msg := range messages {
+		llmMessages = append(llmMessages, &agent.LLMMessage{
+			Role:    agent.RoleUser,
+			Content: msg.Query,
+		})
+		if msg.Answer != "" {
+			llmMessages = append(llmMessages, &agent.LLMMessage{
+				Role:    agent.RoleAssistant,
+				Content: msg.Answer,
+			})
+		}
+	}
+	return llmMessages
+}
+
+const genChatTitlePrompt = `
+You are a helpful assistant that generates chat titles based on the chat history.
+Your task is to generate a concise and descriptive title for the chat based on the messages.
+The title should be no more than 32 characters long.
+Always reply in Chinese.
+`
+
+// handleGenChatTitle 生成聊天标题
+// @Summary 生成聊天标题
+// @Description 根据聊天历史生成聊天标题
+// @Tags 对话
+// @Accept json
+// @Produce json
+// @Param conversationId query int true "对话ID"
+// @Success 200 {object} dao.GenChatTitleResponse "聊天标题"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /v1/conversation/{uuid}/title [post]
+func (s *Server) handleGenChatTitle(c *gin.Context) {
+	conversation := c.MustGet(conversationKey).(*model.Conversation)
+	messages, _, err := conversation.GetChatMessages(0, 20)
+	if err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	systemMessage := &agent.LLMMessage{
+		Role:    agent.RoleSystem,
+		Content: genChatTitlePrompt,
+	}
+	userPrompt := "messages:\n\n"
+	for _, msg := range messages {
+		userPrompt += fmt.Sprintf("user: %s\n\n", msg.Query)
+		userPrompt += fmt.Sprintf("assistant: %s\n\n", msg.Answer)
+	}
+	userMessage := &agent.LLMMessage{
+		Role:    agent.RoleUser,
+		Content: userPrompt,
+	}
+	llm := agent.NewLLM(s.conf.LLM)
+	m, err := llm.ChatCompletion(c, []*agent.LLMMessage{systemMessage, userMessage}, nil)
+	if err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+    title := strings.Trim(m.Content, "\n ")
+    // 以字符（rune）为单位进行截断，避免截断多字节字符导致无效 UTF-8 序列
+    runes := []rune(title)
+    if len(runes) > 32 {
+        title = string(runes[:32])
+    }
+
+	if err := conversation.SetTitle(title); err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, dao.GenChatTitleResponse{
+		Title: title,
+	})
 }

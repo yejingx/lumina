@@ -24,6 +24,11 @@ func CreateConversation(c *Conversation) error {
 	return DB.Create(c).Error
 }
 
+func (c *Conversation) SetTitle(title string) error {
+	c.Title = title
+	return DB.Save(c).Error
+}
+
 func GetConversationByUuid(uuid string) (*Conversation, error) {
 	var c Conversation
 	err := DB.Where("uuid = ?", uuid).First(&c).Error
@@ -55,12 +60,12 @@ func DeleteConversationByUuid(uuid string) error {
 }
 
 type ChatMessage struct {
-    Id             int                     `gorm:"primaryKey"`
-    ConversationId int                     `gorm:"index"`
-    Query          string                  `gorm:"default:''"`
-    Answer         string                  `gorm:"type:longtext"`
-    AgentThoughts  agent.AgentThoughtSlice `gorm:"type:json"`
-    CreateTime     time.Time               `gorm:"datetime;autoCreateTime"`
+	Id             int                     `gorm:"primaryKey"`
+	ConversationId int                     `gorm:"index"`
+	Query          string                  `gorm:"default:''"`
+	Answer         string                  `gorm:"type:longtext"`
+	AgentThoughts  agent.AgentThoughtSlice `gorm:"type:json"`
+	CreateTime     time.Time               `gorm:"datetime;autoCreateTime"`
 }
 
 func CreateChatMessage(m *ChatMessage) error {

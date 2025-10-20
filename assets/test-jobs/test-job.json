@@ -10,6 +10,8 @@
     "interval": 1000,
     "labels": "person,car,bicycle,dog,cat",
     "confThreshold": 0.5,
-    "iouThreshold": 0.4
+    "iouThreshold": 0.4,
+    "triggerCount": 1,
+    "triggerInterval": 30
   }
 }

@@ -123,6 +123,8 @@ export interface DetectOptions {
   confThreshold?: number;
   iouThreshold?: number;
   interval?: number;
+  triggerCount?: number;
+  triggerInterval?: number;
 }
 
 export interface VideoSegmentOptions {

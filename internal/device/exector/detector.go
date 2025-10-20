@@ -30,18 +30,20 @@ import (
 )
 
 type Detector struct {
-	tritonCli   base.Client
-	ctx         context.Context
-	cancel      context.CancelFunc
-	wg          *sync.WaitGroup
-	job         *dao.JobSpec
-	logger      *logrus.Entry
-	status      ExectorStatus
-	workDir     string
-	conf        *config.Config
-	nsqProducer *nsq.Producer
-	minioCli    *minio.Client
-	deviceInfo  *metadata.DeviceInfo
+	tritonCli       base.Client
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              *sync.WaitGroup
+	job             *dao.JobSpec
+	logger          *logrus.Entry
+	status          ExectorStatus
+	workDir         string
+	conf            *config.Config
+	nsqProducer     *nsq.Producer
+	minioCli        *minio.Client
+	deviceInfo      *metadata.DeviceInfo
+	triggerCount    int
+	lastTriggerTime time.Time
 }
 
 func NewDetector(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx context.Context,
@@ -70,18 +72,19 @@ func NewDetector(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx
 	}
 	ctx, cancel := context.WithCancel(parentCtx)
 	return &Detector{
-		tritonCli:   tritonCli,
-		ctx:         ctx,
-		cancel:      cancel,
-		wg:          &sync.WaitGroup{},
-		job:         job,
-		status:      ExectorStatusStopped,
-		logger:      log.GetLogger(ctx).WithField("job", job.Uuid),
-		workDir:     workDir,
-		conf:        conf,
-		nsqProducer: nsqProducer,
-		minioCli:    minioCli,
-		deviceInfo:  deviceInfo,
+		tritonCli:       tritonCli,
+		ctx:             ctx,
+		cancel:          cancel,
+		wg:              &sync.WaitGroup{},
+		job:             job,
+		status:          ExectorStatusStopped,
+		logger:          log.GetLogger(ctx).WithField("job", job.Uuid),
+		workDir:         workDir,
+		conf:            conf,
+		nsqProducer:     nsqProducer,
+		minioCli:        minioCli,
+		deviceInfo:      deviceInfo,
+		lastTriggerTime: time.Now(),
 	}, nil
 }
 
@@ -159,8 +162,22 @@ func (e *Detector) inferRoutine(frameCh <-chan gocv.Mat) {
 		inferenceTime := time.Since(start)
 		totalInferenceTime += inferenceTime
 
-		if err := e.saveResult(&frame, boxes); err != nil {
-			e.logger.WithError(err).Errorf("save result error")
+		needSave := false
+		if len(boxes) > 0 {
+			e.triggerCount += 1
+			if time.Since(e.lastTriggerTime) > time.Duration(e.job.Detect.TriggerInterval)*time.Second &&
+				e.triggerCount >= e.job.Detect.TriggerCount {
+				needSave = true
+				e.lastTriggerTime = time.Now()
+			}
+		} else {
+			e.triggerCount = 0
+		}
+
+		if needSave {
+			if err := e.saveResult(&frame, boxes); err != nil {
+				e.logger.WithError(err).Errorf("save result error")
+			}
 		}
 
 		processedFrame.Close()

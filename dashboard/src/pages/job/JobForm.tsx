@@ -174,6 +174,32 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
           style={{ width: '100%' }}
         />
       </Form.Item>
+
+      {/* 新增触发次数 */}
+      <Form.Item
+        name={['detect', 'triggerCount']}
+        label="触发次数"
+      >
+        <InputNumber
+          min={1}
+          placeholder="触发次数"
+          defaultValue={1}
+          style={{ width: '100%' }}
+        />
+      </Form.Item>
+
+      {/* 新增触发间隔（秒） */}
+      <Form.Item
+        name={['detect', 'triggerInterval']}
+        label="触发间隔"
+      >
+        <InputNumber
+          min={1}
+          placeholder="触发间隔（秒）"
+          defaultValue={30}
+          style={{ width: '100%' }}
+        />
+      </Form.Item>
     </>
   );
 

@@ -2200,6 +2200,12 @@ const docTemplate = `{
                 },
                 "modelName": {
                     "type": "string"
+                },
+                "triggerCount": {
+                    "type": "integer"
+                },
+                "triggerInterval": {
+                    "type": "integer"
                 }
             }
         },

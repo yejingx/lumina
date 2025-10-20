@@ -10,11 +10,13 @@ import (
 )
 
 type DetectOptions struct {
-	ModelName     string  `json:"modelName" binding:"required"`
-	Labels        string  `json:"labels,omitempty"`
-	ConfThreshold float32 `json:"confThreshold,omitempty"`
-	IoUThreshold  float32 `json:"iouThreshold,omitempty"`
-	Interval      int     `json:"interval,omitempty"`
+	ModelName       string  `json:"modelName" binding:"required"`
+	Labels          string  `json:"labels,omitempty"`
+	ConfThreshold   float32 `json:"confThreshold,omitempty"`
+	IoUThreshold    float32 `json:"iouThreshold,omitempty"`
+	Interval        int     `json:"interval,omitempty"`
+	TriggerCount    int     `json:"triggerCount,omitempty"`
+	TriggerInterval int     `json:"triggerInterval,omitempty"`
 }
 
 func (d *DetectOptions) GetLabelMap() map[int]string {
@@ -63,11 +65,13 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 
 	if job.Detect != nil {
 		j.Detect = &DetectOptions{
-			ModelName:     job.Detect.ModelName,
-			Labels:        job.Detect.Labels,
-			ConfThreshold: job.Detect.ConfThreshold,
-			IoUThreshold:  job.Detect.IoUThreshold,
-			Interval:      job.Detect.Interval,
+			ModelName:       job.Detect.ModelName,
+			Labels:          job.Detect.Labels,
+			ConfThreshold:   job.Detect.ConfThreshold,
+			IoUThreshold:    job.Detect.IoUThreshold,
+			Interval:        job.Detect.Interval,
+			TriggerCount:    job.Detect.TriggerCount,
+			TriggerInterval: job.Detect.TriggerInterval,
 		}
 	}
 
@@ -112,11 +116,13 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 	// 设置检测选项
 	if req.Detect != nil {
 		job.Detect = &model.DetectOptions{
-			ModelName:     req.Detect.ModelName,
-			Labels:        req.Detect.Labels,
-			ConfThreshold: req.Detect.ConfThreshold,
-			IoUThreshold:  req.Detect.IoUThreshold,
-			Interval:      req.Detect.Interval,
+			ModelName:       req.Detect.ModelName,
+			Labels:          req.Detect.Labels,
+			ConfThreshold:   req.Detect.ConfThreshold,
+			IoUThreshold:    req.Detect.IoUThreshold,
+			Interval:        req.Detect.Interval,
+			TriggerCount:    req.Detect.TriggerCount,
+			TriggerInterval: req.Detect.TriggerInterval,
 		}
 		// 设置默认值
 		if job.Detect.Interval == 0 {
@@ -127,6 +133,12 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 		}
 		if job.Detect.IoUThreshold == 0 {
 			job.Detect.IoUThreshold = 0.45
+		}
+		if job.Detect.TriggerCount == 0 {
+			job.Detect.TriggerCount = 1
+		}
+		if job.Detect.TriggerInterval == 0 {
+			job.Detect.TriggerInterval = 30
 		}
 	}
 
@@ -171,11 +183,13 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 	}
 	if req.Detect != nil {
 		job.Detect = &model.DetectOptions{
-			ModelName:     req.Detect.ModelName,
-			Labels:        req.Detect.Labels,
-			ConfThreshold: req.Detect.ConfThreshold,
-			IoUThreshold:  req.Detect.IoUThreshold,
-			Interval:      req.Detect.Interval,
+			ModelName:       req.Detect.ModelName,
+			Labels:          req.Detect.Labels,
+			ConfThreshold:   req.Detect.ConfThreshold,
+			IoUThreshold:    req.Detect.IoUThreshold,
+			Interval:        req.Detect.Interval,
+			TriggerCount:    req.Detect.TriggerCount,
+			TriggerInterval: req.Detect.TriggerInterval,
 		}
 	}
 	if req.VideoSegment != nil {

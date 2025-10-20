@@ -40,6 +40,9 @@ type DetectOptions struct {
 	Labels        string  `json:"labels" gorm:"default:''"`
 	ConfThreshold float32 `json:"conf_threshold" gorm:"default:0.25"`
 	IoUThreshold  float32 `json:"iou_threshold" gorm:"default:0.45"`
+
+	TriggerCount    int `json:"trigger_count" gorm:"default:1"`
+	TriggerInterval int `json:"trigger_interval" gorm:"default:30"`
 }
 
 // Value implements driver.Valuer interface for JSON serialization

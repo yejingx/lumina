@@ -357,6 +357,12 @@ const JobDetail: React.FC = () => {
                 <Descriptions.Item label="检测间隔">
                   {job.detect.interval !== undefined ? `${job.detect.interval} ms` : '-'}
                 </Descriptions.Item>
+                <Descriptions.Item label="触发次数">
+                  {job.detect.triggerCount !== undefined ? job.detect.triggerCount : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="触发间隔">
+                  {job.detect.triggerInterval !== undefined ? `${job.detect.triggerInterval} 秒` : '-'}
+                </Descriptions.Item>
               </Descriptions>
             </Card>
           )}

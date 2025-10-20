@@ -201,6 +201,10 @@ definitions:
         type: string
       modelName:
         type: string
+      triggerCount:
+        type: integer
+      triggerInterval:
+        type: integer
     required:
     - modelName
     type: object

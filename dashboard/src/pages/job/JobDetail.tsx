@@ -15,6 +15,10 @@ import {
   Collapse,
   Drawer,
   Image,
+  Row,
+  Col,
+  DatePicker,
+  Select,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -30,11 +34,12 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { jobApi, messageApi, deviceApi, workflowApi } from '../../services/api';
-import type { Job, Message, Device, Workflow, ListParams } from '../../types';
+import type { Job, Message, Device, Workflow, ListParams, JobStatsResponse, JobStatsRequest } from '../../types';
 import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/helpers';
 import { JOB_STATUS_MAP, JOB_KIND_MAP, MESSAGE_TYPE_MAP, DEFAULT_PAGE_SIZE } from '../../utils/constants';
 import JobForm from './JobForm';
 import VideoThumbnail from '../../components/VideoThumbnail';
+import { Line } from '@ant-design/plots';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -61,6 +66,29 @@ const JobDetail: React.FC = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
+
+  // 统计数据状态
+  const [stats, setStats] = useState<JobStatsResponse | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsParams, setStatsParams] = useState<JobStatsRequest>({ window: '5m' });
+
+  // 统计区间选择（非必需，用户选择时才更新）
+  const handleRangeChange = (values: any) => {
+    if (!values || values.length !== 2) {
+      setStatsParams((prev) => ({ ...prev, start: undefined, end: undefined }));
+      return;
+    }
+    const [start, end] = values;
+    setStatsParams((prev) => ({
+      ...prev,
+      start: start?.toDate()?.toISOString(),
+      end: end?.toDate()?.toISOString(),
+    }));
+  };
+
+  const handleWindowChange = (value: string) => {
+    setStatsParams((prev) => ({ ...prev, window: value }));
+  };
 
   // 获取任务详情
   const fetchJobDetail = async () => {
@@ -127,6 +155,27 @@ const JobDetail: React.FC = () => {
       fetchJobMessages();
     }
   }, [activeTab, messagesCurrent, id, job]);
+
+  // 获取任务统计
+  const fetchJobStats = async () => {
+    if (!id || !job) return;
+    setStatsLoading(true);
+    try {
+      const jobId = job.id;
+      const data = await jobApi.stats(jobId, statsParams);
+      setStats(data);
+    } catch (error) {
+      handleApiError(error, '获取任务统计失败');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'stats') {
+      fetchJobStats();
+    }
+  }, [activeTab, id, job, statsParams]);
 
   // 处理任务操作
   const handleJobAction = async (action: string) => {
@@ -423,6 +472,65 @@ const JobDetail: React.FC = () => {
               },
             }}
           />
+        </div>
+      ),
+    },
+    {
+      key: 'stats',
+      label: '统计',
+      children: (
+        <div>
+          <Space style={{ marginBottom: 16 }}>
+            <Button icon={<ReloadOutlined />} onClick={fetchJobStats}>刷新</Button>
+            <DatePicker.RangePicker
+              showTime
+              onChange={handleRangeChange}
+              style={{ minWidth: 280 }}
+            />
+            <Select
+              value={statsParams.window || '5m'}
+              onChange={handleWindowChange}
+              style={{ width: 120 }}
+              options={[
+                { value: '1m', label: '1分钟' },
+                { value: '5m', label: '5分钟' },
+                { value: '15m', label: '15分钟' },
+                { value: '1h', label: '1小时' },
+              ]}
+            />
+          </Space>
+
+          {statsLoading ? (
+            <Spin />
+          ) : (
+            <Row gutter={16}>
+              <Col span={12}>
+                <Card title="消息数量趋势" style={{ marginBottom: 16 }}>
+                  <Line
+                    data={(stats?.messages || []).map((d: any) => ({ time: d.time, count: d.count }))}
+                    xField="time"
+                    yField="count"
+                    xAxis={{ type: 'time' }}
+                    smooth
+                  />
+                </Card>
+              </Col>
+              {job?.kind === 'detect' && (
+                <Col span={12}>
+                  <Card title="标签数量趋势">
+                    <Line
+                      data={(stats?.labels || []).map((d: any) => ({ time: d.time, count: d.count, label: d.label }))}
+                      xField="time"
+                      yField="count"
+                      seriesField="label"
+                      xAxis={{ type: 'time' }}
+                      smooth
+                    />
+                  </Card>
+                </Col>
+              )}
+            </Row>
+          )}
         </div>
       ),
     },

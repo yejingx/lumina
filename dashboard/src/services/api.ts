@@ -25,6 +25,10 @@ import type {
   UpdateJobRequest,
   JobSpec,
 
+  // Job stats types
+  JobStatsRequest,
+  JobStatsResponse,
+
   // Message types
   ListMessageResponse,
   MessageSpec,
@@ -156,6 +160,10 @@ export const jobApi = {
   // 停止任务
   stop: (jobId: string | number): Promise<void> =>
     api.put(`/job/${jobId}/stop`),
+
+  // 获取任务统计
+  stats: (jobId: number, params?: JobStatsRequest): Promise<JobStatsResponse> =>
+    api.get(`/job/${jobId}/stats`, { params }),
 };
 
 // 消息 API

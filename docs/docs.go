@@ -921,6 +921,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/job/{job_id}/stats": {
+            "get": {
+                "description": "根据job_id从InfluxDB查询消息数量趋势；检测任务还返回各Label数量趋势",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务"
+                ],
+                "summary": "获取任务统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务job_id",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间(RFC3339)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间(RFC3339)",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "5m",
+                        "description": "聚合窗口，如1m、5m、15m",
+                        "name": "window",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.JobStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "任务不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/job/{job_id}/stop": {
             "put": {
                 "description": "根据job_id停止任务",
@@ -2318,6 +2387,37 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.JobStatsResponse": {
+            "type": "object",
+            "properties": {
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.LabelTimeCount"
+                    }
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.TimeCount"
+                    }
+                }
+            }
+        },
+        "dao.LabelTimeCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                }
+            }
+        },
         "dao.ListAccessTokenResponse": {
             "type": "object",
             "properties": {
@@ -2524,6 +2624,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.TimeCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "time": {
                     "type": "string"
                 }
             }

@@ -22,3 +22,9 @@ dify:
   apiKey: app-AKOuQX8LKCvKQcrXHWciBks2
   baseURL: http://dymo.nm.ljyun.cn/v1
   timeout: 30s
+influxdb:
+  url: http://127.0.0.1:48086
+  org: lumina
+  bucket: lumina
+  token: lumina-dev-token
+  enabled: true

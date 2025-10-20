@@ -296,3 +296,26 @@ export interface ListParams {
 export interface RouteParams {
   id?: string;
 }
+
+// 任务统计类型
+export interface JobStatsRequest {
+  start?: string; // RFC3339 string
+  end?: string;   // RFC3339 string
+  window?: string; // e.g., '1m', '5m'
+}
+
+export interface TimeCount {
+  time: string;
+  count: number;
+}
+
+export interface LabelTimeCount {
+  label: string;
+  time: string;
+  count: number;
+}
+
+export interface JobStatsResponse {
+  messages: TimeCount[];
+  labels?: LabelTimeCount[];
+}

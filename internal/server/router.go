@@ -73,6 +73,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	job.DELETE("/:job_id", s.handleDeleteJob)
 	job.PUT("/:job_id/start", s.handleStartJob)
 	job.PUT("/:job_id/stop", s.handleStopJob)
+	job.GET("/:job_id/stats", s.handleJobStats)
 
 	message := apiV1.Group("/message")
 	message.Use(SetMessageToContext())

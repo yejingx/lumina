@@ -27,10 +27,19 @@ func (s3 *S3Config) UrlPrefix() string {
 	return fmt.Sprintf("http://%s/%s", s3.Endpoint, s3.Bucket)
 }
 
+type InfluxDBConfig struct {
+	URL     string `yaml:"url"`
+	Org     string `yaml:"org"`
+	Bucket  string `yaml:"bucket"`
+	Token   string `yaml:"token"`
+	Enabled bool   `yaml:"enabled"`
+}
+
 type Config struct {
-	NSQ NSQConfig      `yaml:"nsq"`
-	S3  S3Config       `yaml:"s3"`
-	DB  model.DBConfig `yaml:"db"`
+	NSQ      NSQConfig      `yaml:"nsq"`
+	S3       S3Config       `yaml:"s3"`
+	DB       model.DBConfig `yaml:"db"`
+	InfluxDB InfluxDBConfig `yaml:"influxdb"`
 }
 
 func DefaultConfig() *Config {
@@ -45,6 +54,13 @@ func DefaultConfig() *Config {
 			Endpoint: "localhost:9000",
 			UseSSL:   false,
 			Region:   "us-east-1",
+		},
+		InfluxDB: InfluxDBConfig{
+			URL:     "http://127.0.0.1:48086",
+			Org:     "lumina",
+			Bucket:  "lumina",
+			Token:   "",
+			Enabled: false,
 		},
 	}
 }

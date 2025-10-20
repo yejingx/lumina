@@ -31,6 +31,14 @@ func (c S3Config) VisitPrefix() string {
 	return c.VisitEndpoint + "/" + c.Bucket
 }
 
+type InfluxDBConfig struct {
+	URL     string `yaml:"url"`
+	Org     string `yaml:"org"`
+	Bucket  string `yaml:"bucket"`
+	Token   string `yaml:"token"`
+	Enabled bool   `yaml:"enabled"`
+}
+
 type Config struct {
 	Addr      string          `yaml:"addr"`
 	SSLCert   string          `yaml:"sslCert"`
@@ -39,6 +47,7 @@ type Config struct {
 	DB        model.DBConfig  `yaml:"db"`
 	S3        S3Config        `yaml:"s3"`
 	LLM       agent.LLMConfig `yaml:"llm"`
+	InfluxDB  InfluxDBConfig  `yaml:"influxdb"`
 }
 
 func DefaultConfig() *Config {
@@ -55,6 +64,13 @@ func DefaultConfig() *Config {
 			Model:   "gpt-3.5-turbo",
 			BaseUrl: "https://api.openai.com/v1",
 			Timeout: 300 * time.Second,
+		},
+		InfluxDB: InfluxDBConfig{
+			URL:     "http://127.0.0.1:48086",
+			Org:     "lumina",
+			Bucket:  "lumina",
+			Token:   "",
+			Enabled: false,
 		},
 	}
 }

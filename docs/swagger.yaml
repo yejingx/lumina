@@ -281,6 +281,26 @@ definitions:
     - updateTime
     - uuid
     type: object
+  dao.JobStatsResponse:
+    properties:
+      labels:
+        items:
+          $ref: '#/definitions/dao.LabelTimeCount'
+        type: array
+      messages:
+        items:
+          $ref: '#/definitions/dao.TimeCount'
+        type: array
+    type: object
+  dao.LabelTimeCount:
+    properties:
+      count:
+        type: integer
+      label:
+        type: string
+      time:
+        type: string
+    type: object
   dao.ListAccessTokenResponse:
     properties:
       accessTokens:
@@ -417,6 +437,13 @@ definitions:
       token:
         type: string
       uuid:
+        type: string
+    type: object
+  dao.TimeCount:
+    properties:
+      count:
+        type: integer
+      time:
         type: string
     type: object
   dao.ToolCallSpec:
@@ -1116,6 +1143,52 @@ paths:
           schema:
             $ref: '#/definitions/server.ErrorResponse'
       summary: 启动任务
+      tags:
+      - 任务
+  /api/v1/job/{job_id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: 根据job_id从InfluxDB查询消息数量趋势；检测任务还返回各Label数量趋势
+      parameters:
+      - description: 任务job_id
+        in: path
+        name: job_id
+        required: true
+        type: string
+      - description: 开始时间(RFC3339)
+        in: query
+        name: start
+        type: string
+      - description: 结束时间(RFC3339)
+        in: query
+        name: end
+        type: string
+      - default: 5m
+        description: 聚合窗口，如1m、5m、15m
+        in: query
+        name: window
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.JobStatsResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取任务统计
       tags:
       - 任务
   /api/v1/job/{job_id}/stop:

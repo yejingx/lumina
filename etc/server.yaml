@@ -20,3 +20,9 @@ llm:
   model: deepseek-ai/DeepSeek-V3.1-Terminus
   apiKey: 22d76d7444577c4cc74da646f1ac317a
   baseUrl: http://36.150.51.8:30001/v1
+influxdb:
+  url: http://127.0.0.1:48086
+  org: lumina
+  bucket: lumina
+  token: lumina-dev-token
+  enabled: true

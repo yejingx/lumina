@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	api "github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/sirupsen/logrus"
 
 	_ "lumina/docs"
@@ -23,10 +25,12 @@ import (
 const httpXRequestId = "X-Request-Id"
 
 type Server struct {
-	conf       *Config
-	httpServer *http.Server
-	client     *http.Client
-	logger     *logrus.Entry
+	conf         *Config
+	httpServer   *http.Server
+	client       *http.Client
+	logger       *logrus.Entry
+	influxClient influxdb2.Client
+	influxQuery  api.QueryAPI
 }
 
 func NewServer(ctx context.Context, conf *Config) (*Server, error) {
@@ -41,6 +45,12 @@ func NewServer(ctx context.Context, conf *Config) (*Server, error) {
 			},
 		},
 		logger: log.GetLogger(ctx),
+	}
+
+	if conf.InfluxDB.Enabled {
+		client := influxdb2.NewClient(conf.InfluxDB.URL, conf.InfluxDB.Token)
+		s.influxClient = client
+		s.influxQuery = client.QueryAPI(conf.InfluxDB.Org)
 	}
 
 	return s, nil

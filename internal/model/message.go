@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type DetectionBox struct {
@@ -105,6 +107,9 @@ func DeleteMessage(id int) error {
 func GetMessage(id int) (*Message, error) {
 	var m *Message
 	if err := DB.Where("id = ?", id).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return m, nil
@@ -132,4 +137,52 @@ func GetMessages(start, limit int) ([]*Message, int64, error) {
 		return nil, 0, err
 	}
 	return ms, total, nil
+}
+
+type AlertMessage struct {
+	Id         int       `gorm:"primaryKey"`
+	MessageId  int       `gorm:"type:int;index"`
+	Message    Message   `gorm:"foreignKey:MessageId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	CreateTime time.Time `gorm:"type:datetime;autoCreateTime"`
+}
+
+func AddAlertMessage(m *AlertMessage) error {
+	return DB.Create(m).Error
+}
+
+func DeleteAlertMessage(id int) error {
+	return DB.Delete(&AlertMessage{}, id).Error
+}
+
+func GetAlertMessage(id int) (*AlertMessage, error) {
+	var m AlertMessage
+	if err := DB.Preload("Message").Where("id = ?", id).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &m, nil
+}
+
+func GetAlertMessagesByJobId(jobId, start, limit int) ([]*AlertMessage, int64, error) {
+	var alerts []*AlertMessage
+	base := DB.Model(&AlertMessage{}).
+		Joins("JOIN messages ON messages.id = alert_messages.message_id").
+		Where("messages.job_id = ?", jobId)
+
+	if err := base.Preload("Message").
+		Order("alert_messages.id desc").
+		Offset(start).
+		Limit(limit).
+		Find(&alerts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var count int64
+	if err := base.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return alerts, count, nil
 }

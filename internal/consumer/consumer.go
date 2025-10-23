@@ -126,6 +126,17 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 	// write event to influxdb
 	c.writeInfluxEvents(job, &msg)
 
+	if job.ResultFilter != nil {
+		if job.ResultFilter.Match(answer) {
+			alertMsg := &model.AlertMessage{
+				MessageId: m.Id,
+			}
+			if err := model.AddAlertMessage(alertMsg); err != nil {
+				c.logger.WithError(err).Errorf("Failed to add alert message to DB for job %s", msg.JobUuid)
+			}
+		}
+	}
+
 	message.Finish()
 	c.logger.Debugf("Successfully processed message for job %s", msg.JobUuid)
 	return nil

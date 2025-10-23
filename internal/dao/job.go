@@ -45,6 +45,7 @@ type JobSpec struct {
 	WorkflowId   int                  `json:"workflowId,omitempty"`
 	Query        string               `json:"query,omitempty"`
 	Device       *DeviceSpec          `json:"device,omitempty"`
+	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
 }
 
 func FromJobModel(job *model.Job) (*JobSpec, error) {
@@ -52,15 +53,16 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 		return nil, errors.New("job is nil")
 	}
 	j := &JobSpec{
-		Id:         job.Id,
-		Uuid:       job.Uuid,
-		Kind:       job.Kind,
-		Status:     job.Status.String(),
-		Input:      job.Input,
-		CreateTime: job.CreateTime.Format(time.RFC3339),
-		UpdateTime: job.UpdateTime.Format(time.RFC3339),
-		WorkflowId: job.WorkflowId,
-		Query:      job.Query,
+		Id:           job.Id,
+		Uuid:         job.Uuid,
+		Kind:         job.Kind,
+		Status:       job.Status.String(),
+		Input:        job.Input,
+		CreateTime:   job.CreateTime.Format(time.RFC3339),
+		UpdateTime:   job.UpdateTime.Format(time.RFC3339),
+		WorkflowId:   job.WorkflowId,
+		Query:        job.Query,
+		ResultFilter: FromFilterConditionModel(job.ResultFilter),
 	}
 
 	if job.Detect != nil {
@@ -100,6 +102,7 @@ type CreateJobRequest struct {
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   int                  `json:"workflowId,omitempty"`
 	Query        string               `json:"query,omitempty"`
+	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
 }
 
 func (req *CreateJobRequest) ToModel() *model.Job {
@@ -152,6 +155,10 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 			job.VideoSegment.Interval = 30
 		}
 	}
+
+	if req.ResultFilter != nil {
+		job.ResultFilter = req.ResultFilter.ToModel()
+	}
 	return job
 }
 
@@ -166,6 +173,7 @@ type UpdateJobRequest struct {
 	WorkflowId   *int                 `json:"workflowId,omitempty"`
 	Query        *string              `json:"query,omitempty"`
 	DeviceId     *int                 `json:"deviceId,omitempty"`
+	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
 }
 
 func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
@@ -197,6 +205,9 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 			Interval: req.VideoSegment.Interval,
 		}
 	}
+	if req.ResultFilter != nil {
+		job.ResultFilter = req.ResultFilter.ToModel()
+	}
 }
 
 type ListJobsRequest struct {
@@ -207,4 +218,65 @@ type ListJobsRequest struct {
 type ListJobsResponse struct {
 	Items []JobSpec `json:"items"`
 	Total int64     `json:"total"`
+}
+
+type Condition struct {
+	Field string         `json:"field,omitempty"`
+	Op    model.Operator `json:"op,omitempty"`
+	Value string         `json:"value,omitempty"`
+}
+
+func (c *Condition) ToModel() *model.Condition {
+	if c == nil {
+		return nil
+	}
+	return &model.Condition{
+		Field: c.Field,
+		Op:    c.Op,
+		Value: c.Value,
+	}
+}
+
+type FilterCondition struct {
+	CombineOperator model.CombineOperator `json:"combineOp,omitempty"`
+	Conditions      []*Condition          `json:"conditions,omitempty"`
+}
+
+func (c *FilterCondition) ToModel() *model.FilterCondition {
+	if c == nil {
+		return nil
+	}
+	fc := &model.FilterCondition{
+		CombineOperator: c.CombineOperator,
+		Conditions:      make([]*model.Condition, 0, len(c.Conditions)),
+	}
+	for _, cond := range c.Conditions {
+		fc.Conditions = append(fc.Conditions, cond.ToModel())
+	}
+	return fc
+}
+
+func FromFilterConditionModel(filter *model.FilterCondition) *FilterCondition {
+	if filter == nil {
+		return nil
+	}
+	fc := &FilterCondition{
+		CombineOperator: filter.CombineOperator,
+		Conditions:      make([]*Condition, 0, len(filter.Conditions)),
+	}
+	for _, cond := range filter.Conditions {
+		fc.Conditions = append(fc.Conditions, FromConditionModel(cond))
+	}
+	return fc
+}
+
+func FromConditionModel(condition *model.Condition) *Condition {
+	if condition == nil {
+		return nil
+	}
+	return &Condition{
+		Field: condition.Field,
+		Op:    condition.Op,
+		Value: condition.Value,
+	}
 }

@@ -162,3 +162,31 @@ type ListMessagesResponse struct {
 	Items []MessageSpec `json:"items"`
 	Total int64         `json:"total"`
 }
+
+type AlertMessageSpec struct {
+	Id         int         `json:"id"`
+	Message    MessageSpec `json:"message"`
+	CreateTime string      `json:"createTime"`
+}
+
+func FromAlertMessageModel(am *model.AlertMessage) *AlertMessageSpec {
+	if am == nil {
+		return nil
+	}
+	return &AlertMessageSpec{
+		Id:         am.Id,
+		Message:    *FromMessageModel(&am.Message),
+		CreateTime: am.CreateTime.Format(time.RFC3339),
+	}
+}
+
+type ListAlertMessagesRequest struct {
+	JobId int `json:"jobId" form:"jobId"`
+	Start int `json:"start" form:"start" binding:"min=0"`
+	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
+}
+
+type ListAlertMessagesResponse struct {
+	Items []AlertMessageSpec `json:"items"`
+	Total int64              `json:"total"`
+}

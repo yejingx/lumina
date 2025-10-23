@@ -45,6 +45,40 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 const { Panel } = Collapse;
 
+// 新增：操作符中文映射
+const OPERATOR_LABELS: Record<string, string> = {
+  eq: '等于',
+  ne: '不等于',
+  in: '包含于',
+  not_in: '不包含于',
+  contains: '包含',
+  not_contains: '不包含',
+  starts_with: '开头为',
+  ends_with: '结尾为',
+  empty: '为空',
+  not_empty: '不为空',
+};
+
+// 新增：结果过滤内联文本生成函数（接收参数，避免引用组件外的 job）
+const getResultFilterText = (rf?: any) => {
+  const rfLocal = rf;
+  if (!rfLocal) return '-';
+  const combineText = rfLocal.combineOp === 'and'
+    ? '并且 (AND)'
+    : rfLocal.combineOp === 'or'
+      ? '或者 (OR)'
+      : (rfLocal.combineOp || '-');
+  const conditions = rfLocal.conditions || [];
+  if (conditions.length === 0) return combineText;
+  const condText = conditions.map((c: any) => {
+    const opLabel = OPERATOR_LABELS[c.op] || c.op;
+    const field = c.field || '-';
+    const value = (c.value ?? '-');
+    return `${field} ${opLabel} ${value}`;
+  }).join('；');
+  return `${combineText}；${condText}`;
+};
+
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -313,6 +347,13 @@ const JobDetail: React.FC = () => {
     },
   ];
 
+  // 新增：结果过滤条件表格列配置
+  const conditionColumns: ColumnsType<any> = [
+    { title: '字段', dataIndex: 'field', key: 'field', width: 160, render: (v: string) => v || '-' },
+    { title: '操作符', dataIndex: 'op', key: 'op', width: 120, render: (op: string) => OPERATOR_LABELS[op] || op },
+    { title: '匹配值', dataIndex: 'value', key: 'value', render: (v: string | undefined) => (v ?? '-') },
+  ];
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -373,6 +414,9 @@ const JobDetail: React.FC = () => {
                 </div>
               ) : '-'}
             </Descriptions.Item>
+            <Descriptions.Item label="结果过滤" span={2}>
+              {getResultFilterText(job?.resultFilter)}
+            </Descriptions.Item>
             <Descriptions.Item label="创建时间">
               {formatDate(job.createTime || (job as any).created_at)}
             </Descriptions.Item>
@@ -426,6 +470,8 @@ const JobDetail: React.FC = () => {
               </Descriptions>
             </Card>
           )}
+
+          {/* 结果过滤卡片已移除，使用查询设置下方的单行显示 */}
         </div>
       ),
     },

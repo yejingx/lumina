@@ -49,45 +49,29 @@ func InitDB(dbConfig DBConfig) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
-    err := db.AutoMigrate(&User{})
-    if err != nil {
-        return err
-    }
-	err = db.AutoMigrate(&Job{})
-	if err != nil {
-		return err
+	for _, model := range []any{
+		&User{},
+		&Job{},
+		&Device{},
+		&Workflow{},
+		&Message{},
+		&AccessToken{},
+		&Conversation{},
+		&ChatMessage{},
+		&AlertMessage{},
+	} {
+		err := db.AutoMigrate(model)
+		if err != nil {
+			return err
+		}
 	}
-	err = db.AutoMigrate(&Device{})
-	if err != nil {
-		return err
-	}
-	err = db.AutoMigrate(&Workflow{})
-	if err != nil {
-		return err
-	}
-	err = db.AutoMigrate(&Message{})
-	if err != nil {
-		return err
-	}
-	err = db.AutoMigrate(&AccessToken{})
-	if err != nil {
-		return err
-	}
-	err = db.AutoMigrate(&Conversation{})
-	if err != nil {
-		return err
-	}
-    err = db.AutoMigrate(&ChatMessage{})
-    if err != nil {
-        return err
-    }
 
-    // Ensure ChatMessage.answer uses a large text type to avoid overflow errors
-    // MySQL TEXT/LONGTEXT columns cannot have default values; tag has been updated.
-    // AutoMigrate does not always change existing column types, so we enforce it here.
-    _ = db.Exec("ALTER TABLE chat_messages MODIFY COLUMN answer LONGTEXT").Error
+	// Ensure ChatMessage.answer uses a large text type to avoid overflow errors
+	// MySQL TEXT/LONGTEXT columns cannot have default values; tag has been updated.
+	// AutoMigrate does not always change existing column types, so we enforce it here.
+	_ = db.Exec("ALTER TABLE chat_messages MODIFY COLUMN answer LONGTEXT").Error
 
-    return nil
+	return nil
 }
 
 func InsertTestData(db *gorm.DB) error {

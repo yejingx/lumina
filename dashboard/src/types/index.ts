@@ -131,6 +131,32 @@ export interface VideoSegmentOptions {
   interval?: number;
 }
 
+// 结果过滤类型
+export type Operator =
+  | 'eq'
+  | 'ne'
+  | 'in'
+  | 'not_in'
+  | 'contains'
+  | 'not_contains'
+  | 'starts_with'
+  | 'ends_with'
+  | 'empty'
+  | 'not_empty';
+
+export type CombineOperator = 'and' | 'or';
+
+export interface Condition {
+  field: string;
+  op: Operator;
+  value?: string;
+}
+
+export interface FilterCondition {
+  combineOp: CombineOperator;
+  conditions: Condition[];
+}
+
 // 任务类型
 export interface Job {
   id: number;
@@ -145,6 +171,7 @@ export interface Job {
   device: DeviceSpec;
   workflowId?: number;
   query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface JobSpec {
@@ -160,6 +187,7 @@ export interface JobSpec {
   device: DeviceSpec;
   workflowId?: number;
   query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface CreateJobRequest {
@@ -171,6 +199,7 @@ export interface CreateJobRequest {
   deviceId: number;
   workflowId?: number;
   query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface UpdateJobRequest {
@@ -182,6 +211,7 @@ export interface UpdateJobRequest {
   device?: DeviceSpec;
   workflowId?: number;
   query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface CreateJobResponse {
@@ -285,19 +315,16 @@ export interface ListWorkflowResponse {
   total: number;
 }
 
-// 通用类型
 export interface ListParams {
   start: number;
   limit: number;
   jobId?: number;
 }
 
-// 路由参数类型
 export interface RouteParams {
   id?: string;
 }
 
-// 任务统计类型
 export interface JobStatsRequest {
   start?: string; // RFC3339 string
   end?: string;   // RFC3339 string

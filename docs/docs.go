@@ -2043,6 +2043,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.Condition": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "op": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "dao.ConversationSpec": {
             "type": "object",
             "required": [
@@ -2120,6 +2134,9 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"
@@ -2327,6 +2344,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.FilterCondition": {
+            "type": "object",
+            "properties": {
+                "combineOp": {
+                    "type": "string"
+                },
+                "conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.Condition"
+                    }
+                }
+            }
+        },
         "dao.GenChatTitleResponse": {
             "type": "object",
             "required": [
@@ -2369,6 +2400,9 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "status": {
                     "type": "string"
@@ -2664,6 +2698,9 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"

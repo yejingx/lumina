@@ -51,6 +51,15 @@ definitions:
     required:
     - query
     type: object
+  dao.Condition:
+    properties:
+      field:
+        type: string
+      op:
+        type: string
+      value:
+        type: string
+    type: object
   dao.ConversationSpec:
     properties:
       createTime:
@@ -99,6 +108,8 @@ definitions:
         $ref: '#/definitions/model.JobKind'
       query:
         type: string
+      resultFilter:
+        $ref: '#/definitions/dao.FilterCondition'
       videoSegment:
         $ref: '#/definitions/dao.VideoSegmentOptions'
       workflowId:
@@ -240,6 +251,15 @@ definitions:
       uuid:
         type: string
     type: object
+  dao.FilterCondition:
+    properties:
+      combineOp:
+        type: string
+      conditions:
+        items:
+          $ref: '#/definitions/dao.Condition'
+        type: array
+    type: object
   dao.GenChatTitleResponse:
     properties:
       title:
@@ -263,6 +283,8 @@ definitions:
         $ref: '#/definitions/model.JobKind'
       query:
         type: string
+      resultFilter:
+        $ref: '#/definitions/dao.FilterCondition'
       status:
         type: string
       updateTime:
@@ -463,6 +485,8 @@ definitions:
         type: string
       query:
         type: string
+      resultFilter:
+        $ref: '#/definitions/dao.FilterCondition'
       videoSegment:
         $ref: '#/definitions/dao.VideoSegmentOptions'
       workflowId:

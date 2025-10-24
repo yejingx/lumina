@@ -319,6 +319,7 @@ export interface ListParams {
   start: number;
   limit: number;
   jobId?: number;
+  alerted?: boolean;
 }
 
 export interface RouteParams {

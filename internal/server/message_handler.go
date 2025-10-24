@@ -14,13 +14,7 @@ const messageKey = "message"
 
 func SetMessageToContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		messageIdStr := c.Param("message_id")
-		if messageIdStr == "" {
-			c.Next()
-			return
-		}
-
-		messageId, err := strconv.Atoi(messageIdStr)
+		messageId, err := strconv.Atoi(c.Param("message_id"))
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "invalid message_id",
@@ -154,10 +148,18 @@ func (s *Server) handleListMessages(c *gin.Context) {
 	var err error
 	var messages []*model.Message
 	var total int64
-	if req.JobId == 0 {
-		messages, total, err = model.GetMessages(req.Start, req.Limit)
+	if req.Alerted {
+		if req.JobId == 0 {
+			messages, total, err = model.GetAlertMessages(req.Start, req.Limit)
+		} else {
+			messages, total, err = model.GetAlertMessagesByJobId(req.JobId, req.Start, req.Limit)
+		}
 	} else {
-		messages, total, err = model.GetMessagesByJobId(req.JobId, req.Start, req.Limit)
+		if req.JobId == 0 {
+			messages, total, err = model.GetMessages(req.Start, req.Limit)
+		} else {
+			messages, total, err = model.GetMessagesByJobId(req.JobId, req.Start, req.Limit)
+		}
 	}
 	if err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)

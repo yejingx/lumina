@@ -79,6 +79,7 @@ type MessageSpec struct {
 	VideoPath    string          `json:"videoPath,omitempty"`
 	CreateTime   string          `json:"createTime"`
 	WorkflowResp *WorkflowResp   `json:"workflowResp,omitempty"`
+	Alerted      bool            `json:"alerted,omitempty"`
 }
 
 func FromMessageModel(msg *model.Message) *MessageSpec {
@@ -92,6 +93,7 @@ func FromMessageModel(msg *model.Message) *MessageSpec {
 	m.ImagePath = msg.ImagePath
 	m.VideoPath = msg.VideoPath
 	m.CreateTime = msg.CreateTime.Format(time.RFC3339)
+	m.Alerted = msg.Alerted
 
 	if msg.DetectBoxes != nil {
 		m.DetectBoxes = make([]*DetectionBox, len(msg.DetectBoxes))
@@ -153,40 +155,13 @@ type CreateMessageResponse struct {
 }
 
 type ListMessagesRequest struct {
-	JobId int `json:"jobId" form:"jobId"`
-	Start int `json:"start" form:"start" binding:"min=0"`
-	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
+	JobId   int  `json:"jobId" form:"jobId"`
+	Start   int  `json:"start" form:"start" binding:"min=0"`
+	Limit   int  `json:"limit" form:"limit" binding:"min=0,max=50"`
+	Alerted bool `json:"alerted" form:"alerted"`
 }
 
 type ListMessagesResponse struct {
 	Items []MessageSpec `json:"items"`
 	Total int64         `json:"total"`
-}
-
-type AlertMessageSpec struct {
-	Id         int         `json:"id"`
-	Message    MessageSpec `json:"message"`
-	CreateTime string      `json:"createTime"`
-}
-
-func FromAlertMessageModel(am *model.AlertMessage) *AlertMessageSpec {
-	if am == nil {
-		return nil
-	}
-	return &AlertMessageSpec{
-		Id:         am.Id,
-		Message:    *FromMessageModel(&am.Message),
-		CreateTime: am.CreateTime.Format(time.RFC3339),
-	}
-}
-
-type ListAlertMessagesRequest struct {
-	JobId int `json:"jobId" form:"jobId"`
-	Start int `json:"start" form:"start" binding:"min=0"`
-	Limit int `json:"limit" form:"limit" binding:"min=0,max=50"`
-}
-
-type ListAlertMessagesResponse struct {
-	Items []AlertMessageSpec `json:"items"`
-	Total int64              `json:"total"`
 }

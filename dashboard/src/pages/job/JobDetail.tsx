@@ -19,6 +19,7 @@ import {
   Col,
   DatePicker,
   Select,
+  Checkbox,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -100,6 +101,7 @@ const JobDetail: React.FC = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
+  const [onlyAlerted, setOnlyAlerted] = useState(true);
 
   // 统计数据状态
   const [stats, setStats] = useState<JobStatsResponse | null>(null);
@@ -169,6 +171,7 @@ const JobDetail: React.FC = () => {
         start: (messagesCurrent - 1) * DEFAULT_PAGE_SIZE,
         limit: DEFAULT_PAGE_SIZE,
         jobId: job.id,
+        alerted: onlyAlerted ? true : undefined,
       };
       const response = await messageApi.list(params);
       setMessages(response.items);
@@ -188,7 +191,7 @@ const JobDetail: React.FC = () => {
     if (activeTab === 'messages') {
       fetchJobMessages();
     }
-  }, [activeTab, messagesCurrent, id, job]);
+  }, [activeTab, messagesCurrent, id, job, onlyAlerted]);
 
   // 获取任务统计
   const fetchJobStats = async () => {
@@ -488,6 +491,13 @@ const JobDetail: React.FC = () => {
               >
                 刷新
               </Button>
+              <Checkbox
+                checked={onlyAlerted}
+                onChange={(e) => setOnlyAlerted(e.target.checked)}
+                style={{ marginLeft: 20 }}
+              >
+                只看已告警消息
+              </Checkbox>
             </Space>
             <Space style={{ float: 'right' }}>
               <Search

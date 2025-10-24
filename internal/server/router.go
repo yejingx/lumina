@@ -75,12 +75,12 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	job.PUT("/:job_id/stop", s.handleStopJob)
 	job.GET("/:job_id/stats", s.handleJobStats)
 
-	message := apiV1.Group("/message")
+	apiV1.GET("/message", s.handleListMessages)
+	apiV1.POST("/message", s.handleCreateMessage)
+	message := apiV1.Group("/message/:message_id")
 	message.Use(SetMessageToContext())
-	message.GET("", s.handleListMessages)
-	message.POST("", s.handleCreateMessage)
-	message.GET("/:message_id", s.handleGetMessage)
-	message.DELETE("/:message_id", s.handleDeleteMessage)
+	message.GET("", s.handleGetMessage)
+	message.DELETE("", s.handleDeleteMessage)
 
 	apiV1.GET("/conversation", s.handleListConversations)
 	apiV1.POST("/conversation", s.handleCreateConversation)

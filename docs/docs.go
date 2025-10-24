@@ -2598,6 +2598,9 @@ const docTemplate = `{
         "dao.MessageSpec": {
             "type": "object",
             "properties": {
+                "alerted": {
+                    "type": "boolean"
+                },
                 "createTime": {
                     "type": "string"
                 },

@@ -419,6 +419,8 @@ definitions:
     type: object
   dao.MessageSpec:
     properties:
+      alerted:
+        type: boolean
       createTime:
         type: string
       detectBoxes:

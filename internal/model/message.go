@@ -94,10 +94,22 @@ type Message struct {
 	VideoPath    string            `json:"videoPath,omitempty" gorm:"type:varchar(255)"`
 	CreateTime   time.Time         `json:"createTime" gorm:"type:datetime;autoCreateTime"`
 	WorkflowResp *WorkflowResp     `json:"workflowResp,omitempty" gorm:"type:json"`
+	Alerted      bool              `json:"alerted,omitempty" gorm:"type:bool;default:false"`
 }
 
 func AddMessage(m *Message) error {
-	return DB.Create(m).Error
+	return DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(m).Error; err != nil {
+			return err
+		}
+		if m.Alerted {
+			alert := &AlertMessage{MessageId: m.Id}
+			if err := tx.Create(alert).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func DeleteMessage(id int) error {
@@ -146,26 +158,7 @@ type AlertMessage struct {
 	CreateTime time.Time `gorm:"type:datetime;autoCreateTime"`
 }
 
-func AddAlertMessage(m *AlertMessage) error {
-	return DB.Create(m).Error
-}
-
-func DeleteAlertMessage(id int) error {
-	return DB.Delete(&AlertMessage{}, id).Error
-}
-
-func GetAlertMessage(id int) (*AlertMessage, error) {
-	var m AlertMessage
-	if err := DB.Preload("Message").Where("id = ?", id).First(&m).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &m, nil
-}
-
-func GetAlertMessagesByJobId(jobId, start, limit int) ([]*AlertMessage, int64, error) {
+func GetAlertMessagesByJobId(jobId, start, limit int) ([]*Message, int64, error) {
 	var alerts []*AlertMessage
 	base := DB.Model(&AlertMessage{}).
 		Joins("JOIN messages ON messages.id = alert_messages.message_id").
@@ -184,5 +177,28 @@ func GetAlertMessagesByJobId(jobId, start, limit int) ([]*AlertMessage, int64, e
 		return nil, 0, err
 	}
 
-	return alerts, count, nil
+	var ms []*Message
+	for _, a := range alerts {
+		ms = append(ms, &a.Message)
+	}
+
+	return ms, count, nil
+}
+
+func GetAlertMessages(start, limit int) ([]*Message, int64, error) {
+	var total int64
+	var alerts []*AlertMessage
+	if err := DB.Preload("Message").Model(&AlertMessage{}).Order("id desc").Offset(start).Limit(limit).Find(&alerts).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := DB.Model(&AlertMessage{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var ms []*Message
+	for _, a := range alerts {
+		ms = append(ms, &a.Message)
+	}
+
+	return ms, total, nil
 }

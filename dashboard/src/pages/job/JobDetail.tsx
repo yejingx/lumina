@@ -46,39 +46,7 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 const { Panel } = Collapse;
 
-// 新增：操作符中文映射
-const OPERATOR_LABELS: Record<string, string> = {
-  eq: '等于',
-  ne: '不等于',
-  in: '包含于',
-  not_in: '不包含于',
-  contains: '包含',
-  not_contains: '不包含',
-  starts_with: '开头为',
-  ends_with: '结尾为',
-  empty: '为空',
-  not_empty: '不为空',
-};
 
-// 新增：结果过滤内联文本生成函数（接收参数，避免引用组件外的 job）
-const getResultFilterText = (rf?: any) => {
-  const rfLocal = rf;
-  if (!rfLocal) return '-';
-  const combineText = rfLocal.combineOp === 'and'
-    ? '并且 (AND)'
-    : rfLocal.combineOp === 'or'
-      ? '或者 (OR)'
-      : (rfLocal.combineOp || '-');
-  const conditions = rfLocal.conditions || [];
-  if (conditions.length === 0) return combineText;
-  const condText = conditions.map((c: any) => {
-    const opLabel = OPERATOR_LABELS[c.op] || c.op;
-    const field = c.field || '-';
-    const value = (c.value ?? '-');
-    return `${field} ${opLabel} ${value}`;
-  }).join('；');
-  return `${combineText}；${condText}`;
-};
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -146,14 +114,8 @@ const JobDetail: React.FC = () => {
         }
       }
 
-      // 获取关联的工作流信息
-      if (jobData.workflowId) {
-        try {
-          const workflowData = await workflowApi.get(jobData.workflowId);
-          setWorkflow(workflowData);
-        } catch (error) {
-          console.warn('Failed to fetch workflow:', error);
-        }
+      if ((jobData as any).workflow) {
+        setWorkflow((jobData as any).workflow);
       }
     } catch (error) {
       handleApiError(error, '获取任务详情失败');
@@ -350,12 +312,7 @@ const JobDetail: React.FC = () => {
     },
   ];
 
-  // 新增：结果过滤条件表格列配置
-  const conditionColumns: ColumnsType<any> = [
-    { title: '字段', dataIndex: 'field', key: 'field', width: 160, render: (v: string) => v || '-' },
-    { title: '操作符', dataIndex: 'op', key: 'op', width: 120, render: (op: string) => OPERATOR_LABELS[op] || op },
-    { title: '匹配值', dataIndex: 'value', key: 'value', render: (v: string | undefined) => (v ?? '-') },
-  ];
+
 
   if (loading) {
     return (
@@ -398,28 +355,12 @@ const JobDetail: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="输入">{job.input || '-'}</Descriptions.Item>
             <Descriptions.Item label="关联设备">
-              {job.device.uuid}
+              {job.device.name}
             </Descriptions.Item>
             <Descriptions.Item label="工作流">
-              {workflow?.name || '-'}
+              {job.workflow?.name || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="查询设置" span={2}>
-              {job.query ? (
-                <div style={{
-                  maxHeight: '100px',
-                  overflow: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  backgroundColor: '#f5f5f5',
-                  padding: '8px',
-                  borderRadius: '4px'
-                }}>
-                  {job.query}
-                </div>
-              ) : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="结果过滤" span={2}>
-              {getResultFilterText(job?.resultFilter)}
-            </Descriptions.Item>
+
             <Descriptions.Item label="创建时间">
               {formatDate(job.createTime || (job as any).created_at)}
             </Descriptions.Item>

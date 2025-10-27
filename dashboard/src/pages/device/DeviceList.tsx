@@ -8,19 +8,18 @@ import {
   Card,
   Input,
   Typography,
+  Tooltip,
 } from 'antd';
 import {
   DeleteOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined,
   ReloadOutlined,
-  CopyOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { deviceApi } from '../../services/api';
 import type { Device, ListParams } from '../../types';
-import { formatDate, handleApiError, getDeleteConfirmConfig, copyToClipboard } from '../../utils/helpers';
+import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/helpers';
 import { DEFAULT_PAGE_SIZE } from '../../utils/constants';
 
 const { Search } = Input;
@@ -34,7 +33,24 @@ const DeviceList: React.FC = () => {
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchText, setSearchText] = useState('');
-  const [visibleTokens, setVisibleTokens] = useState<Set<number>>(new Set());
+  // 已移除令牌显示逻辑
+
+  // 相对时间格式化：秒/分钟/小时/天前
+  const formatRelativeTime = (dateStr: string | undefined): string => {
+    if (!dateStr) return '-';
+    const time = new Date(dateStr).getTime();
+    if (isNaN(time)) return '-';
+    const now = Date.now();
+    let diffSec = Math.floor((now - time) / 1000);
+    if (diffSec < 0) diffSec = 0;
+    if (diffSec < 60) return `${diffSec}秒前`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}分钟前`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}小时前`;
+    const diffDay = Math.floor(diffHour / 24);
+    return `${diffDay}天前`;
+  };
 
   // 获取设备列表
   const fetchDevices = async () => {
@@ -79,33 +95,6 @@ const DeviceList: React.FC = () => {
     navigate(`/devices/${device.id}`);
   };
 
-  // 处理复制令牌
-  const handleCopyToken = (token: string) => {
-    copyToClipboard(token);
-  };
-
-  // 处理切换令牌显示
-  const toggleTokenVisibility = (deviceId: number) => {
-    setVisibleTokens(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(deviceId)) {
-        newSet.delete(deviceId);
-      } else {
-        newSet.add(deviceId);
-      }
-      return newSet;
-    });
-  };
-
-  // 格式化令牌显示
-  const formatToken = (token: string, deviceId: number) => {
-    const isVisible = visibleTokens.has(deviceId);
-    if (isVisible) {
-      return token;
-    }
-    return '•'.repeat(Math.min(token.length, 20));
-  };
-
   // 表格列配置
   const columns: ColumnsType<Device> = [
     {
@@ -121,30 +110,15 @@ const DeviceList: React.FC = () => {
       ),
     },
     {
-      title: '设备令牌',
-      dataIndex: 'token',
-      key: 'token',
+      title: '设备名称',
+      dataIndex: 'name',
+      key: 'name',
       width: 250,
-      render: (token: string, record: Device) => (
-        <Space>
-          <Text code copyable={false} ellipsis style={{ maxWidth: 120 }}>
-            {formatToken(token, record.id)}
-          </Text>
-          <Button
-            type="text"
-            size="small"
-            icon={visibleTokens.has(record.id) ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-            onClick={() => toggleTokenVisibility(record.id)}
-            title={visibleTokens.has(record.id) ? "隐藏令牌" : "显示令牌"}
-          />
-          <Button
-            type="text"
-            size="small"
-            icon={<CopyOutlined />}
-            onClick={() => handleCopyToken(token)}
-            title="复制令牌"
-          />
-        </Space>
+      ellipsis: true,
+      render: (name: string) => (
+        <Text copyable={false} ellipsis style={{ maxWidth: 200 }}>
+          {name}
+        </Text>
       ),
     },
     {
@@ -159,7 +133,11 @@ const DeviceList: React.FC = () => {
       dataIndex: 'lastPingTime',
       key: 'lastPingTime',
       width: 180,
-      render: (date: string) => formatDate(date),
+      render: (date: string) => (
+        <Tooltip title={`最后心跳时间：${formatDate(date)}`}>
+          <span>{formatRelativeTime(date)}</span>
+        </Tooltip>
+      ),
     },
     {
       title: '操作',

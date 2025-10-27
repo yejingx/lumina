@@ -38,6 +38,7 @@ import type {
   CreateWorkflowRequest,
   CreateWorkflowResponse,
   WorkflowSpec,
+  UpdateWorkflowRequest,
 
   ListParams,
 } from '../types';
@@ -196,7 +197,7 @@ export const workflowApi = {
     api.post('/workflow', data),
 
   // 更新工作流
-  update: (workflowId: number, data: Partial<CreateWorkflowRequest>): Promise<WorkflowSpec> =>
+  update: (workflowId: number, data: Partial<UpdateWorkflowRequest>): Promise<WorkflowSpec> =>
     api.put(`/workflow/${workflowId}`, data),
 
   // 删除工作流
@@ -263,7 +264,7 @@ export const conversationApi = {
   create: (data: CreateConversationRequest): Promise<CreateConversationResponse> =>
     api.post('/conversation', data),
 
-  // 获取对话详情（通过 uuid）
+  // 获取对话详情
   get: (uuid: string): Promise<ConversationSpec> =>
     api.get(`/conversation/${uuid}`),
 
@@ -271,11 +272,11 @@ export const conversationApi = {
   delete: (uuid: string): Promise<void> =>
     api.delete(`/conversation/${uuid}`),
 
-  // 列出聊天消息
+  // 列出消息
   listMessages: (uuid: string, params: { start?: number; limit?: number }): Promise<ListChatMessagesResponse> =>
     api.get(`/conversation/${uuid}/message`, { params }),
 
-  // 启动聊天 SSE 流
+  // Chat stream
   chatStream: (uuid: string, data: ChatRequest): Promise<Response> =>
     fetch(`/api/v1/conversation/${uuid}/chat`,
       {
@@ -285,7 +286,7 @@ export const conversationApi = {
       }
     ),
 
-  // 生成聊天标题
+  // Generate title for conversation
   genTitle: (uuid: string): Promise<{ title: string }> =>
     api.post(`/conversation/${uuid}/title`),
 };

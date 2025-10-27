@@ -65,7 +65,8 @@ func (d *DetectionBoxSlice) Scan(value any) error {
 }
 
 type WorkflowResp struct {
-	Answer string `json:"answer,omitempty" gorm:"type:text"`
+	Answer      string `json:"answer,omitempty" gorm:"type:text"`
+	TotalTokens int    `json:"total_tokens" gorm:"type:int"`
 }
 
 func (w WorkflowResp) Value() (driver.Value, error) {

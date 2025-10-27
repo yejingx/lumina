@@ -165,6 +165,22 @@ const JobList: React.FC = () => {
       },
     },
     {
+      title: '关联设备',
+      dataIndex: 'device',
+      key: 'device',
+      render: (device: any, record: Job) => {
+        return device.name || device.uuid;
+      },
+    },
+    {
+      title: '工作流',
+      dataIndex: 'workflow',
+      key: 'workflow',
+      width: 160,
+      ellipsis: true,
+      render: (_: any, record: Job) => record.workflow?.name || '-',
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -175,24 +191,6 @@ const JobList: React.FC = () => {
           color: 'default',
         };
         return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
-      },
-    },
-    {
-      title: '输入',
-      dataIndex: 'input',
-      key: 'input',
-      width: 200,
-      ellipsis: true,
-      render: (input: string) => input || '-',
-    },
-    {
-      title: '关联设备',
-      dataIndex: 'device',
-      key: 'device',
-      render: (device: any, record: Job) => {
-        if (device?.uuid) return device.uuid;
-        if ((record as any).device_id) return `设备 ${(record as any).device_id}`;
-        return '-';
       },
     },
     {

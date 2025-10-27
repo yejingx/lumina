@@ -2237,6 +2237,7 @@ const docTemplate = `{
             "required": [
                 "endpoint",
                 "key",
+                "modelName",
                 "name"
             ],
             "properties": {
@@ -2246,8 +2247,17 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer",
@@ -2416,8 +2426,8 @@ const docTemplate = `{
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"
                 },
-                "workflowId": {
-                    "type": "integer"
+                "workflow": {
+                    "$ref": "#/definitions/dao.WorkflowSpec"
                 }
             }
         },
@@ -2722,8 +2732,17 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer"
@@ -2776,7 +2795,9 @@ const docTemplate = `{
             "required": [
                 "endpoint",
                 "key",
+                "modelName",
                 "name",
+                "query",
                 "uuid"
             ],
             "properties": {
@@ -2792,8 +2813,17 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer"

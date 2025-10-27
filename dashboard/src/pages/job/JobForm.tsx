@@ -1,9 +1,8 @@
 import React from 'react';
-import { Form, Input, Select, Button, Card, message, InputNumber, Divider, Space } from 'antd';
+import { Form, Input, Select, Button, message, InputNumber, Divider } from 'antd';
 import { jobApi, deviceApi, workflowApi } from '../../services/api';
 import type { Job, CreateJobRequest, JobKind, DetectOptions, VideoSegmentOptions, Workflow } from '../../types';
 import { handleApiError } from '../../utils/helpers';
-import { DeleteOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -52,9 +51,8 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
         kind: job.kind,
         input: job.input,
         deviceId: job.device.id,
-        workflowId: job.workflowId,
-        query: job.query,
-        resultFilter: job.resultFilter,
+        // 后端返回的字段由 workflowId 改为 workflow 对象，这里取其 id 作为初始值
+        workflowId: (job as any)?.workflow?.id,
       };
 
       // Initialize detect options if present
@@ -91,9 +89,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
         kind: values.kind,
         input: values.input || '',
         workflowId: values.workflowId,
-        query: values.query,
         deviceId: values.deviceId,
-        resultFilter: values.resultFilter,
       };
 
       // Add specific options based on kind
@@ -223,83 +219,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
     </>
   );
 
-  // Render result filter form
-  const renderResultFilter = () => (
-    <>
-      <Divider>结果过滤</Divider>
-      <Form.Item name={['resultFilter', 'combineOp']} label="组合逻辑">
-        <Select placeholder="请选择逻辑">
-          <Option value="and">并且 (AND)</Option>
-          <Option value="or">或者 (OR)</Option>
-        </Select>
-      </Form.Item>
 
-      <Form.List name={['resultFilter', 'conditions']}>
-        {(fields, { add, remove }) => (
-          <div>
-            {fields.map((field) => (
-              <Card key={field.key} size="small" style={{ marginBottom: 8 }}>
-                <Space size="small" align="center">
-                  {/* <Form.Item
-                    {...field}
-                    name={[field.name, 'field']}
-                    fieldKey={[field.fieldKey!, 'field']}
-                    rules={[{ required: true, message: '请输入字段名' }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="字段名，例如 answer 或 label" style={{ width: 160 }} />
-                  </Form.Item> */}
-
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'op']}
-                    fieldKey={[field.fieldKey!, 'op']}
-                    rules={[{ required: true, message: '请选择操作符' }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Select placeholder="选择操作符" style={{ width: 120 }}>
-                      <Option value="eq">等于</Option>
-                      <Option value="ne">不等于</Option>
-                      <Option value="in">包含于</Option>
-                      <Option value="not_in">不包含于</Option>
-                      <Option value="contains">包含</Option>
-                      <Option value="not_contains">不包含</Option>
-                      <Option value="starts_with">开头为</Option>
-                      <Option value="ends_with">结尾为</Option>
-                      <Option value="empty">为空</Option>
-                      <Option value="not_empty">不为空</Option>
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'value']}
-                    fieldKey={[field.fieldKey!, 'value']}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="匹配值（empty/not_empty 可留空）" style={{ width: 370 }} />
-                  </Form.Item>
-
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => remove(field.name)}
-                    title="删除条件"
-                  >
-                  </Button>
-                </Space>
-              </Card>
-            ))}
-            <Button type="dashed" onClick={() => add()} block>
-              新增条件
-            </Button>
-          </div>
-        )}
-      </Form.List>
-    </>
-  );
 
   return (
     <Form
@@ -356,23 +276,10 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
         </Select>
       </Form.Item>
 
-      <Form.Item
-        name="query"
-        label="查询设置"
-      >
-        <Input.TextArea
-          placeholder="请输入查询设置（可选）"
-          rows={3}
-          maxLength={1000}
-          showCount
-        />
-      </Form.Item>
 
       {/* Render specific options based on selected kind */}
       {selectedKind === 'detect' && renderDetectOptions()}
       {selectedKind === 'video_segment' && renderVideoSegmentOptions()}
-
-      {renderResultFilter()}
 
       <Divider />
 

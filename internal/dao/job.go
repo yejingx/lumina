@@ -42,7 +42,7 @@ type JobSpec struct {
 	UpdateTime   string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
-	WorkflowId   int                  `json:"workflowId,omitempty"`
+	Workflow     *WorkflowSpec        `json:"workflow,omitempty"`
 	Query        string               `json:"query,omitempty"`
 	Device       *DeviceSpec          `json:"device,omitempty"`
 	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
@@ -53,16 +53,21 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 		return nil, errors.New("job is nil")
 	}
 	j := &JobSpec{
-		Id:           job.Id,
-		Uuid:         job.Uuid,
-		Kind:         job.Kind,
-		Status:       job.Status.String(),
-		Input:        job.Input,
-		CreateTime:   job.CreateTime.Format(time.RFC3339),
-		UpdateTime:   job.UpdateTime.Format(time.RFC3339),
-		WorkflowId:   job.WorkflowId,
-		Query:        job.Query,
-		ResultFilter: FromFilterConditionModel(job.ResultFilter),
+		Id:         job.Id,
+		Uuid:       job.Uuid,
+		Kind:       job.Kind,
+		Status:     job.Status.String(),
+		Input:      job.Input,
+		CreateTime: job.CreateTime.Format(time.RFC3339),
+		UpdateTime: job.UpdateTime.Format(time.RFC3339),
+	}
+
+	if job.WorkflowId != 0 {
+		wf, err := job.Workflow()
+		if err != nil {
+			return nil, err
+		}
+		j.Workflow = FromWorkflowModel(wf)
 	}
 
 	if job.Detect != nil {
@@ -112,7 +117,6 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 		Input:      req.Input,
 		Status:     model.JobStatusStopped,
 		WorkflowId: req.WorkflowId,
-		Query:      req.Query,
 		DeviceId:   req.DeviceId,
 	}
 
@@ -155,10 +159,6 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 			job.VideoSegment.Interval = 30
 		}
 	}
-
-	if req.ResultFilter != nil {
-		job.ResultFilter = req.ResultFilter.ToModel()
-	}
 	return job
 }
 
@@ -186,9 +186,6 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 	if req.WorkflowId != nil {
 		job.WorkflowId = *req.WorkflowId
 	}
-	if req.Query != nil {
-		job.Query = *req.Query
-	}
 	if req.Detect != nil {
 		job.Detect = &model.DetectOptions{
 			ModelName:       req.Detect.ModelName,
@@ -205,9 +202,6 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 			Interval: req.VideoSegment.Interval,
 		}
 	}
-	if req.ResultFilter != nil {
-		job.ResultFilter = req.ResultFilter.ToModel()
-	}
 }
 
 type ListJobsRequest struct {
@@ -218,65 +212,4 @@ type ListJobsRequest struct {
 type ListJobsResponse struct {
 	Items []JobSpec `json:"items"`
 	Total int64     `json:"total"`
-}
-
-type Condition struct {
-	Field string         `json:"field,omitempty"`
-	Op    model.Operator `json:"op,omitempty"`
-	Value string         `json:"value,omitempty"`
-}
-
-func (c *Condition) ToModel() *model.Condition {
-	if c == nil {
-		return nil
-	}
-	return &model.Condition{
-		Field: c.Field,
-		Op:    c.Op,
-		Value: c.Value,
-	}
-}
-
-type FilterCondition struct {
-	CombineOperator model.CombineOperator `json:"combineOp,omitempty"`
-	Conditions      []*Condition          `json:"conditions,omitempty"`
-}
-
-func (c *FilterCondition) ToModel() *model.FilterCondition {
-	if c == nil {
-		return nil
-	}
-	fc := &model.FilterCondition{
-		CombineOperator: c.CombineOperator,
-		Conditions:      make([]*model.Condition, 0, len(c.Conditions)),
-	}
-	for _, cond := range c.Conditions {
-		fc.Conditions = append(fc.Conditions, cond.ToModel())
-	}
-	return fc
-}
-
-func FromFilterConditionModel(filter *model.FilterCondition) *FilterCondition {
-	if filter == nil {
-		return nil
-	}
-	fc := &FilterCondition{
-		CombineOperator: filter.CombineOperator,
-		Conditions:      make([]*Condition, 0, len(filter.Conditions)),
-	}
-	for _, cond := range filter.Conditions {
-		fc.Conditions = append(fc.Conditions, FromConditionModel(cond))
-	}
-	return fc
-}
-
-func FromConditionModel(condition *model.Condition) *Condition {
-	if condition == nil {
-		return nil
-	}
-	return &Condition{
-		Field: condition.Field,
-		Op:    condition.Op,
-		Value: condition.Value,
-	}
 }

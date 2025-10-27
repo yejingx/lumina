@@ -22,6 +22,40 @@ import type { WorkflowSpec } from '../../types';
 import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/helpers';
 import WorkflowForm from './WorkflowForm';
 
+// 操作符中文标签映射
+const OPERATOR_LABELS: Record<string, string> = {
+  eq: '等于',
+  ne: '不等于',
+  in: '包含于',
+  not_in: '不包含于',
+  contains: '包含',
+  not_contains: '不包含',
+  starts_with: '开头为',
+  ends_with: '结尾为',
+  empty: '为空',
+  not_empty: '不为空',
+};
+
+// 结果过滤内联文本生成函数
+const getResultFilterText = (rf?: any) => {
+  const rfLocal = rf;
+  if (!rfLocal) return '-';
+  const combineText = rfLocal.combineOp === 'and'
+    ? '并且 (AND)'
+    : rfLocal.combineOp === 'or'
+      ? '或者 (OR)'
+      : (rfLocal.combineOp || '-');
+  const conditions = rfLocal.conditions || [];
+  if (conditions.length === 0) return combineText;
+  const condText = conditions.map((c: any) => {
+    const opLabel = OPERATOR_LABELS[c.op] || c.op;
+    const field = c.field || '查询结果';
+    const value = (c.value ?? '-');
+    return `${field} ${opLabel} ${value}`;
+  }).join('；');
+  return `${combineText}；${condText}`;
+};
+
 const WorkflowDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -160,6 +194,23 @@ const WorkflowDetail: React.FC = () => {
           </Descriptions.Item>
           <Descriptions.Item label="创建时间">
             {formatDate(workflow.createTime)}
+          </Descriptions.Item>
+          <Descriptions.Item label="查询设置" span={2}>
+            {workflow.query ? (
+              <div style={{
+                maxHeight: '100px',
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                backgroundColor: '#f5f5f5',
+                padding: '8px',
+                borderRadius: '4px'
+              }}>
+                {workflow.query}
+              </div>
+            ) : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="结果过滤" span={2}>
+            {getResultFilterText(workflow?.resultFilter)}
           </Descriptions.Item>
         </Descriptions>
       </Card>

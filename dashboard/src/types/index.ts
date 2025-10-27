@@ -50,6 +50,7 @@ export interface Device {
   id: number;
   token: string;
   uuid: string;
+  name: string;
   registerTime: string;
   lastPingTime: string;
 }
@@ -58,6 +59,7 @@ export interface DeviceSpec {
   id: number;
   token: string;
   uuid: string;
+  name: string;
   registerTime: string;
   lastPingTime: string;
 }
@@ -169,7 +171,7 @@ export interface Job {
   detect?: DetectOptions;
   videoSegment?: VideoSegmentOptions;
   device: DeviceSpec;
-  workflowId?: number;
+  workflow?: WorkflowSpec;
   query?: string;
   resultFilter?: FilterCondition;
 }
@@ -185,7 +187,7 @@ export interface JobSpec {
   detect?: DetectOptions;
   videoSegment?: VideoSegmentOptions;
   device: DeviceSpec;
-  workflowId?: number;
+  workflow?: WorkflowSpec;
   query?: string;
   resultFilter?: FilterCondition;
 }
@@ -198,8 +200,6 @@ export interface CreateJobRequest {
   videoSegment?: VideoSegmentOptions;
   deviceId: number;
   workflowId?: number;
-  query?: string;
-  resultFilter?: FilterCondition;
 }
 
 export interface UpdateJobRequest {
@@ -210,8 +210,6 @@ export interface UpdateJobRequest {
   videoSegment?: VideoSegmentOptions;
   device?: DeviceSpec;
   workflowId?: number;
-  query?: string;
-  resultFilter?: FilterCondition;
 }
 
 export interface CreateJobResponse {
@@ -274,34 +272,46 @@ export interface Workflow {
   id: number;
   uuid: string;
   key: string;
+  modelName: string;
   endpoint: string;
   name: string;
   timeout: number;
   createTime: string;
+  query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface WorkflowSpec {
   id: number;
   uuid: string;
   key: string;
+  modelName: string;
   endpoint: string;
   name: string;
   timeout: number;
   createTime: string;
+  query: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface CreateWorkflowRequest {
   name: string;
   endpoint: string;
+  modelName: string;
   key: string;
   timeout?: number;
+  query: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface UpdateWorkflowRequest {
   name?: string;
   endpoint?: string;
+  modelName?: string;
   key?: string;
   timeout?: number;
+  query?: string;
+  resultFilter?: FilterCondition;
 }
 
 export interface CreateWorkflowResponse {

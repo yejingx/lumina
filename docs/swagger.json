@@ -2226,6 +2226,7 @@
             "required": [
                 "endpoint",
                 "key",
+                "modelName",
                 "name"
             ],
             "properties": {
@@ -2235,8 +2236,17 @@
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer",
@@ -2405,8 +2415,8 @@
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"
                 },
-                "workflowId": {
-                    "type": "integer"
+                "workflow": {
+                    "$ref": "#/definitions/dao.WorkflowSpec"
                 }
             }
         },
@@ -2711,8 +2721,17 @@
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer"
@@ -2765,7 +2784,9 @@
             "required": [
                 "endpoint",
                 "key",
+                "modelName",
                 "name",
+                "query",
                 "uuid"
             ],
             "properties": {
@@ -2781,8 +2802,17 @@
                 "key": {
                     "type": "string"
                 },
+                "modelName": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "resultFilter": {
+                    "$ref": "#/definitions/dao.FilterCondition"
                 },
                 "timeout": {
                     "type": "integer"

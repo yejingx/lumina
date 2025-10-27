@@ -26,6 +26,40 @@ import WorkflowForm from './WorkflowForm';
 
 const { Search } = Input;
 
+// 操作符中文标签映射（与详情页一致）
+const OPERATOR_LABELS: Record<string, string> = {
+  eq: '等于',
+  ne: '不等于',
+  in: '包含于',
+  not_in: '不包含于',
+  contains: '包含',
+  not_contains: '不包含',
+  starts_with: '开头为',
+  ends_with: '结尾为',
+  empty: '为空',
+  not_empty: '不为空',
+};
+
+// 结果过滤内联文本
+const getResultFilterText = (rf?: any) => {
+  const rfLocal = rf;
+  if (!rfLocal) return '-';
+  const combineText = rfLocal.combineOp === 'and'
+    ? '并且 (AND)'
+    : rfLocal.combineOp === 'or'
+      ? '或者 (OR)'
+      : (rfLocal.combineOp || '-');
+  const conditions = rfLocal.conditions || [];
+  if (conditions.length === 0) return combineText;
+  const condText = conditions.map((c: any) => {
+    const opLabel = OPERATOR_LABELS[c.op] || c.op;
+    const field = c.field || '查询结果';
+    const value = (c.value ?? '-');
+    return `${field} ${opLabel} ${value}`;
+  }).join('；');
+  return `${combineText}；${condText}`;
+};
+
 const WorkflowList: React.FC = () => {
   const navigate = useNavigate();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -108,25 +142,38 @@ const WorkflowList: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: 'UUID',
-      dataIndex: 'uuid',
+      title: '查询问题',
+      dataIndex: 'query',
       key: 'uuid',
-      ellipsis: true,
-      render: (text: string) => text || '-',
+      ellipsis: false,
+      render: (text: string) => (
+        text ? (
+          <pre
+            style={{
+              maxHeight: 120,
+              overflow: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              backgroundColor: '#f5f5f5',
+              padding: 8,
+              borderRadius: 4,
+              fontFamily: 'monospace',
+              margin: 0,
+            }}
+          >
+            {text}
+          </pre>
+        ) : (
+          '-'
+        )
+      ),
     },
     {
-      title: '端点地址',
-      dataIndex: 'endpoint',
-      key: 'endpoint',
+      title: '结果过滤',
+      dataIndex: 'resultFilter',
+      key: 'resultFilter',
       ellipsis: true,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: '超时时间(ms)',
-      dataIndex: 'timeout',
-      key: 'timeout',
-      width: 120,
-      render: (timeout: number) => timeout || '-',
+      render: (_: any, record) => getResultFilterText(record.resultFilter),
     },
     {
       title: '创建时间',

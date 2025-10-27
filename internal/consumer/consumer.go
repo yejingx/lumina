@@ -18,13 +18,13 @@ import (
 )
 
 type Consumer struct {
-	conf     *Config
-	ctx      context.Context
-	cancel   context.CancelFunc
-	consumer *nsq.Consumer
-	wg       sync.WaitGroup
-	logger   *logrus.Entry
-	dify     *Dify
+	conf            *Config
+	ctx             context.Context
+	cancel          context.CancelFunc
+	consumer        *nsq.Consumer
+	wg              sync.WaitGroup
+	logger          *logrus.Entry
+	workflowManager *WorkflowManager
 	// influx
 	influxClient influxdb2.Client
 	writeAPI     api.WriteAPIBlocking
@@ -47,12 +47,12 @@ func NewConsumer(conf *Config) (*Consumer, error) {
 	}
 
 	c := &Consumer{
-		conf:     conf,
-		ctx:      ctx,
-		cancel:   cancel,
-		consumer: consumer,
-		logger:   logger,
-		dify:     NewDify(ctx),
+		conf:            conf,
+		ctx:             ctx,
+		cancel:          cancel,
+		consumer:        consumer,
+		logger:          logger,
+		workflowManager: NewWorkflowManager(ctx),
 	}
 
 	// init influxdb client if enabled
@@ -102,23 +102,25 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 		return nil
 	}
 
-	var answer string
+	var resp *OpenAIResponse
 	if job.Kind == model.JobKindVideoSegment {
-		answer, err = c.dify.VideoCompletion(wf, c.conf.S3.UrlPrefix()+msg.VideoPath, job.Query)
+		resp, err = c.workflowManager.VideoCompletion(wf, c.conf.S3.UrlPrefix()+msg.VideoPath)
 	} else {
-		answer, err = c.dify.ImageCompletion(wf, c.conf.S3.UrlPrefix()+msg.ImagePath, msg.DetectBoxes, job.Query)
+		resp, err = c.workflowManager.ImageCompletion(wf, c.conf.S3.UrlPrefix()+msg.ImagePath, msg.DetectBoxes)
 	}
 	if err != nil {
-		c.logger.WithError(err).Errorf("Failed to call Dify API for job %s", msg.JobUuid)
+		c.logger.WithError(err).Errorf("Failed to call WorkflowManager API for job %s", msg.JobUuid)
 		return err
 	}
-	c.logger.Infof("DifyChatCompletion response for job %s: %s", msg.JobUuid, answer)
+	answer := resp.Choices[0].Message.Content
+	c.logger.Infof("workflow response for job %s: %s", msg.JobUuid, answer)
 
 	m := msg.ToModel(job)
 	m.WorkflowResp = &model.WorkflowResp{
-		Answer: answer,
+		TotalTokens: resp.Usage.TotalTokens,
+		Answer:      answer,
 	}
-	if job.ResultFilter != nil && job.ResultFilter.Match(answer) {
+	if wf.ResultFilter != nil && wf.ResultFilter.Match(answer) {
 		m.Alerted = true
 	}
 	if err := model.AddMessage(m); err != nil {

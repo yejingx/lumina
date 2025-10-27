@@ -99,3 +99,11 @@ type ListDeviceResponse struct {
 	Devices []DeviceSpec `json:"devices"`
 	Total   int64        `json:"total"`
 }
+
+type DeviceJobStatus struct {
+	ExectorStatus model.ExectorStatus `json:"exectorStatus"`
+}
+
+type DeviceStatus struct {
+	JobStatus map[string]DeviceJobStatus `josn:"jobStatus,omitempty"`
+}

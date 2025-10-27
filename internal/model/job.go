@@ -9,19 +9,25 @@ import (
 	"gorm.io/gorm"
 )
 
-type JobStatus int
+type ExectorStatus int
 
 const (
-	JobStatusStopped JobStatus = iota
-	JobStatusRunning
+	ExectorStatusStopped ExectorStatus = iota
+	ExectorStatusRunning
+	ExectorStatusFinished
+	ExectorStatusFailed
 )
 
-func (j JobStatus) String() string {
-	switch j {
-	case JobStatusStopped:
+func (s ExectorStatus) String() string {
+	switch s {
+	case ExectorStatusStopped:
 		return "stopped"
-	case JobStatusRunning:
+	case ExectorStatusRunning:
 		return "running"
+	case ExectorStatusFinished:
+		return "finished"
+	case ExectorStatusFailed:
+		return "failed"
 	default:
 		return "unknown"
 	}
@@ -93,7 +99,8 @@ type Job struct {
 	Uuid         string               `json:"uuid" gorm:"unique"`
 	Kind         JobKind              `json:"kind" gorm:"default:0"`
 	Input        string               `json:"input" gorm:"NOT NULL"`
-	Status       JobStatus            `json:"status" gorm:"default:0"`
+	Status       ExectorStatus        `json:"status" gorm:"default:0"`
+	Enabled      bool                 `json:"enabled" gorm:"default:true"`
 	CreateTime   time.Time            `json:"create_time" gorm:"datetime;autoCreateTime"`
 	UpdateTime   time.Time            `json:"update_time" gorm:"datetime;autoCreateTime;autoUpdateTime"`
 	Detect       *DetectOptions       `json:"detect" gorm:"type:json"`
@@ -179,4 +186,8 @@ func ListJobsByDeviceId(deviceId int, start, limit int) ([]Job, int64, error) {
 
 func UpdateJob(job *Job) error {
 	return DB.Save(job).Error
+}
+
+func UpdateJobStatus(id int, status ExectorStatus) error {
+	return DB.Model(&Job{}).Omit("UpdateTime").Where("id = ?", id).Update("status", status).Error
 }

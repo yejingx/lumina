@@ -497,6 +497,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/device/report-status": {
+            "post": {
+                "description": "上报设备状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "设备"
+                ],
+                "summary": "上报设备状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "设备ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "设备状态",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.DeviceStatus"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "上报成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/device/unregister": {
             "post": {
                 "description": "注销设备",
@@ -2331,6 +2387,14 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.DeviceJobStatus": {
+            "type": "object",
+            "properties": {
+                "exectorStatus": {
+                    "$ref": "#/definitions/model.ExectorStatus"
+                }
+            }
+        },
         "dao.DeviceSpec": {
             "type": "object",
             "properties": {
@@ -2351,6 +2415,17 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "dao.DeviceStatus": {
+            "type": "object",
+            "properties": {
+                "jobStatus": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/dao.DeviceJobStatus"
+                    }
                 }
             }
         },
@@ -2383,6 +2458,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "createTime",
+                "enabled",
                 "input",
                 "kind",
                 "status",
@@ -2398,6 +2474,9 @@ const docTemplate = `{
                 },
                 "device": {
                     "$ref": "#/definitions/dao.DeviceSpec"
+                },
+                "enabled": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "integer"
@@ -2709,12 +2788,6 @@ const docTemplate = `{
                 "input": {
                     "type": "string"
                 },
-                "query": {
-                    "type": "string"
-                },
-                "resultFilter": {
-                    "$ref": "#/definitions/dao.FilterCondition"
-                },
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"
                 },
@@ -2832,6 +2905,21 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.ExectorStatus": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "ExectorStatusStopped",
+                "ExectorStatusRunning",
+                "ExectorStatusFinished",
+                "ExectorStatusFailed"
+            ]
         },
         "model.JobKind": {
             "type": "string",

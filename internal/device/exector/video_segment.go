@@ -21,6 +21,7 @@ import (
 	"lumina/internal/dao"
 	"lumina/internal/device/config"
 	"lumina/internal/device/metadata"
+	"lumina/internal/model"
 	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
@@ -31,7 +32,7 @@ type VideoSegmentor struct {
 	wg          *sync.WaitGroup
 	job         *dao.JobSpec
 	logger      *logrus.Entry
-	status      ExectorStatus
+	status      model.ExectorStatus
 	workDir     string
 	conf        *config.Config
 	nsqProducer *nsq.Producer
@@ -56,7 +57,7 @@ func NewVideoSegmentor(conf *config.Config, deviceInfo *metadata.DeviceInfo, par
 		wg:          &sync.WaitGroup{},
 		job:         job,
 		logger:      log.GetLogger(ctx).WithField("job", job.Uuid),
-		status:      ExectorStatusStopped,
+		status:      model.ExectorStatusStopped,
 		workDir:     workDir,
 		conf:        conf,
 		nsqProducer: nsqProducer,
@@ -68,7 +69,7 @@ func (e *VideoSegmentor) Job() *dao.JobSpec {
 	return e.job
 }
 
-func (e *VideoSegmentor) Status() ExectorStatus {
+func (e *VideoSegmentor) Status() model.ExectorStatus {
 	return e.status
 }
 
@@ -77,7 +78,7 @@ func (e *VideoSegmentor) Start() error {
 	go func() {
 		defer e.wg.Done()
 		e.logger.Info("video segmentation job started")
-		e.status = ExectorStatusRunning
+		e.status = model.ExectorStatusRunning
 		e.runJob()
 		e.logger.Info("video segmentation job finished")
 	}()
@@ -94,7 +95,7 @@ func (e *VideoSegmentor) Start() error {
 func (e *VideoSegmentor) Stop() {
 	e.cancel()
 	e.wg.Wait()
-	e.status = ExectorStatusStopped
+	e.status = model.ExectorStatusStopped
 }
 
 func (e *VideoSegmentor) runJob() {
@@ -125,7 +126,7 @@ func (e *VideoSegmentor) runJob() {
 
 	if err := cmd.Start(); err != nil {
 		e.logger.WithError(err).Error("failed to start ffmpeg process")
-		e.status = ExectorStatusFailed
+		e.status = model.ExectorStatusFailed
 		return
 	}
 
@@ -146,14 +147,14 @@ func (e *VideoSegmentor) runJob() {
 				e.logger.Info("ffmpeg process terminated")
 			}
 		}
-		e.status = ExectorStatusStopped
+		e.status = model.ExectorStatusStopped
 	case err := <-done:
 		if err != nil {
 			e.logger.WithError(err).Error("ffmpeg process exited with error")
-			e.status = ExectorStatusFailed
+			e.status = model.ExectorStatusFailed
 		} else {
 			e.logger.Info("ffmpeg process completed successfully")
-			e.status = ExectorStatusFinished
+			e.status = model.ExectorStatusFinished
 		}
 	}
 }

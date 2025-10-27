@@ -37,6 +37,7 @@ type JobSpec struct {
 	Uuid         string               `json:"uuid" binding:"required"`
 	Kind         model.JobKind        `json:"kind" binding:"required"`
 	Status       string               `json:"status" binding:"required"`
+	Enabled      bool                 `json:"enabled" binding:"required"`
 	Input        string               `json:"input" binding:"required"`
 	CreateTime   string               `json:"createTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	UpdateTime   string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
@@ -57,6 +58,7 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 		Uuid:       job.Uuid,
 		Kind:       job.Kind,
 		Status:     job.Status.String(),
+		Enabled:    job.Enabled,
 		Input:      job.Input,
 		CreateTime: job.CreateTime.Format(time.RFC3339),
 		UpdateTime: job.UpdateTime.Format(time.RFC3339),
@@ -115,9 +117,10 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 		Uuid:       str.GenDeviceId(16),
 		Kind:       req.Kind,
 		Input:      req.Input,
-		Status:     model.JobStatusStopped,
+		Status:     model.ExectorStatusStopped,
 		WorkflowId: req.WorkflowId,
 		DeviceId:   req.DeviceId,
+		Enabled:    true,
 	}
 
 	// 设置检测选项
@@ -171,9 +174,7 @@ type UpdateJobRequest struct {
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   *int                 `json:"workflowId,omitempty"`
-	Query        *string              `json:"query,omitempty"`
 	DeviceId     *int                 `json:"deviceId,omitempty"`
-	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
 }
 
 func (req *UpdateJobRequest) UpdateModel(job *model.Job) {

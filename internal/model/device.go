@@ -31,6 +31,10 @@ func CreateDevice(d *Device) error {
 	return DB.Create(d).Error
 }
 
+func UpdateDevice(d *Device) error {
+	return DB.Save(d).Error
+}
+
 func DeleteDevice(id uint) error {
 	return DB.Delete(&Device{}, id).Error
 }

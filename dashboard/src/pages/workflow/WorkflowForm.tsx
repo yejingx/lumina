@@ -23,7 +23,7 @@ const WorkflowForm: React.FC<WorkflowFormProps> = ({ workflow, onSubmit, onCance
         name: workflow.name,
         endpoint: workflow.endpoint || '',
         key: workflow.key || '',
-        timeout: workflow.timeout || 3000,
+        timeout: workflow.timeout || 30000,
         query: workflow.query || '',
         resultFilter: workflow.resultFilter,
       });
@@ -51,7 +51,7 @@ const WorkflowForm: React.FC<WorkflowFormProps> = ({ workflow, onSubmit, onCance
           name: values.name,
           endpoint: values.endpoint,
           key: values.key,
-          timeout: values.timeout || 3000,
+          timeout: values.timeout || 30000,
           query: values.query,
           resultFilter: values.resultFilter,
           modelName: values.modelName,
@@ -73,7 +73,7 @@ const WorkflowForm: React.FC<WorkflowFormProps> = ({ workflow, onSubmit, onCance
       layout="vertical"
       onFinish={handleSubmit}
       initialValues={{
-        timeout: 3000,
+        timeout: 30000,
       }}
     >
       <Form.Item
@@ -89,13 +89,13 @@ const WorkflowForm: React.FC<WorkflowFormProps> = ({ workflow, onSubmit, onCance
 
       <Form.Item
         name="endpoint"
-        label="端点地址"
+        label="API地址"
         rules={[
-          { required: true, message: '请输入端点地址' },
+          { required: true, message: '请输入API地址' },
           { type: 'url', message: '请输入有效的URL地址' },
         ]}
       >
-        <Input placeholder="请输入端点地址，如：https://api.example.com" />
+        <Input placeholder="请输入API地址，如：https://api.example.com" />
       </Form.Item>
 
       <Form.Item

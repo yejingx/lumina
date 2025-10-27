@@ -8,6 +8,16 @@ export const formatDate = (date: string | undefined, format: string = DATE_FORMA
   return dayjs(date).format(format);
 };
 
+// 判断某时间是否超过指定分钟数
+export const isOlderThanMinutes = (date: string | undefined, minutes: number): boolean => {
+  if (!date) return true;
+  const time = dayjs(date);
+  if (!time.isValid()) return true;
+  const now = dayjs();
+  const diff = now.diff(time, 'minute');
+  return diff >= minutes;
+};
+
 // 处理 API 错误
 export const handleApiError = (error: any, defaultMessage: string = '操作失败') => {
   console.error('API Error:', error);

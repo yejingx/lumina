@@ -50,6 +50,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	deviceAuthed := device.Group("").Use(DeviceAuth())
 	deviceAuthed.POST("/unregister", s.handleUnregister)
 	deviceAuthed.GET("/jobs", s.handleGetDeviceJobs)
+	deviceAuthed.POST("/report-status", s.handleReportDeviceStatus)
 
 	accessToken := apiV1.Group("/access-token")
 	accessToken.GET("", s.handleListAccessToken)

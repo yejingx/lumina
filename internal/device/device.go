@@ -113,6 +113,9 @@ func (a *Device) Start() {
 			if err := a.syncJobsFromServer(); err != nil {
 				a.logger.WithError(err).Errorf("sync jobs from server failed")
 			}
+			if err := a.reportDeviceStatus(); err != nil {
+				a.logger.WithError(err).Errorf("report device status failed")
+			}
 		case <-syncTicker.C:
 			a.logger.Debug("sync tick")
 			if err := a.syncJobsFromMedadata(); err != nil {

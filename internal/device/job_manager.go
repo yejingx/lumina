@@ -1,9 +1,11 @@
 package device
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -14,7 +16,71 @@ import (
 	"lumina/internal/model"
 )
 
-const fetchJobsPath = "/api/v1/device/jobs"
+const (
+	fetchJobsPath    = "/api/v1/device/jobs"
+	reportStatusPath = "/api/v1/device/report-status"
+)
+
+func (a *Device) reportDeviceStatus() error {
+	a.logger.Debug("report device status")
+
+	jobs, err := a.db.GetJobs()
+	if err != nil {
+		return err
+	}
+
+	deviceStatus := dao.DeviceStatus{
+		JobStatus: make(map[string]dao.DeviceJobStatus),
+	}
+
+	for _, job := range jobs {
+		jobUuid := job.Uuid
+		executor, exists := a.executors[jobUuid]
+		if !exists {
+			deviceStatus.JobStatus[jobUuid] = dao.DeviceJobStatus{
+				ExectorStatus: model.ExectorStatusStopped,
+			}
+		} else {
+			deviceStatus.JobStatus[jobUuid] = dao.DeviceJobStatus{
+				ExectorStatus: executor.Status(),
+			}
+		}
+	}
+
+	info, err := a.db.GetDeviceInfo()
+	if err != nil {
+		return err
+	} else if info == nil || info.Token == nil {
+		return errors.New("device token is nil, please register device")
+	}
+
+	url, err := url.Parse(fmt.Sprintf(a.conf.LuminaServerAddr + reportStatusPath))
+	if err != nil {
+		return err
+	}
+	body, _ := json.Marshal(deviceStatus)
+	req := &http.Request{
+		Method: http.MethodPost,
+		URL:    url,
+		Header: http.Header{
+			"Authorization": []string{fmt.Sprintf("Bearer %s", *info.Token)},
+			"Content-Type":  []string{"application/json"},
+		},
+		Body: io.NopCloser(bytes.NewBuffer(body)),
+	}
+
+	resp, err := a.httpCli.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http request failed, status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
 
 func (a *Device) fetchJobsFromServer(info *metadata.DeviceInfo, lastFetchTs int64) (*dao.ListJobsResponse, error) {
 	a.logger.Debugf("fetch jobs, lastFetch: %s", time.Unix(lastFetchTs, 0).Format(time.RFC1123))
@@ -157,7 +223,7 @@ func (a *Device) syncJobsFromMedadata() error {
 	}
 
 	for _, job := range metaJobs {
-		if job.Status == model.JobStatusStopped.String() {
+		if !job.Enabled {
 			continue
 		}
 		if _, ok := a.executors[job.Uuid]; !ok {

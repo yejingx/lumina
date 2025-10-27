@@ -184,7 +184,7 @@ const WorkflowDetail: React.FC = () => {
           <Descriptions.Item label="API密钥" span={2}>
             <Tag color="orange">{workflow.key ? '已设置' : '未设置'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="端点地址" span={2}>
+          <Descriptions.Item label="API地址" span={2}>
             <a href={workflow.endpoint} target="_blank" rel="noopener noreferrer">
               {workflow.endpoint || '-'}
             </a>

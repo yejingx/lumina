@@ -199,6 +199,13 @@ const MessageList: React.FC = () => {
       ),
     },
     {
+      title: '已告警',
+      dataIndex: 'alerted',
+      key: 'alerted',
+      width: 100,
+      render: (alerted?: boolean) => (alerted ? '是' : '否'),
+    },
+    {
       title: '时间戳',
       dataIndex: 'timestamp',
       key: 'timestamp',

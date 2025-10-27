@@ -36,7 +36,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { jobApi, messageApi, deviceApi, workflowApi } from '../../services/api';
 import type { Job, Message, Device, Workflow, ListParams, JobStatsResponse, JobStatsRequest } from '../../types';
-import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/helpers';
+import { formatDate, handleApiError, getDeleteConfirmConfig, isOlderThanMinutes } from '../../utils/helpers';
 import { JOB_STATUS_MAP, JOB_KIND_MAP, MESSAGE_TYPE_MAP, DEFAULT_PAGE_SIZE } from '../../utils/constants';
 import JobForm from './JobForm';
 import VideoThumbnail from '../../components/VideoThumbnail';
@@ -294,14 +294,11 @@ const JobDetail: React.FC = () => {
       ),
     },
     {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
+      title: '已告警',
+      dataIndex: 'alerted',
+      key: 'alerted',
       width: 100,
-      render: (type: string) => {
-        const typeInfo = MESSAGE_TYPE_MAP[type as keyof typeof MESSAGE_TYPE_MAP] || { text: type || '默认', color: 'default' };
-        return <Tag color={typeInfo.color}>{typeInfo.text}</Tag>;
-      },
+      render: (alerted: boolean) => (alerted ? '是' : '否'),
     },
     {
       title: '时间戳',
@@ -332,7 +329,10 @@ const JobDetail: React.FC = () => {
     );
   }
 
-  const statusInfo = JOB_STATUS_MAP[job.status as keyof typeof JOB_STATUS_MAP] || { text: job.status, color: 'default' };
+  const isUnknown = isOlderThanMinutes(job?.device?.lastPingTime, 10);
+  const statusInfo = isUnknown
+    ? { text: '未知', color: 'default' as const }
+    : (JOB_STATUS_MAP[job.status as keyof typeof JOB_STATUS_MAP] || { text: job.status, color: 'default' });
   const kindInfo = JOB_KIND_MAP[(job.kind) as keyof typeof JOB_KIND_MAP];
 
   const tabItems = [
@@ -552,7 +552,7 @@ const JobDetail: React.FC = () => {
             </Button>
           </Space>
           <Space>
-            {job.status === 'stopped' && (
+            {!job.enabled && (
               <Button
                 type="primary"
                 icon={<PlayCircleOutlined />}
@@ -562,7 +562,7 @@ const JobDetail: React.FC = () => {
                 启动
               </Button>
             )}
-            {job.status === 'running' && (
+            {job.enabled && (
               <Button
                 type="default"
                 icon={<StopOutlined />}

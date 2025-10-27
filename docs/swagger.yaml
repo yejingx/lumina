@@ -243,6 +243,11 @@ definitions:
       y2:
         type: integer
     type: object
+  dao.DeviceJobStatus:
+    properties:
+      exectorStatus:
+        $ref: '#/definitions/model.ExectorStatus'
+    type: object
   dao.DeviceSpec:
     properties:
       id:
@@ -257,6 +262,13 @@ definitions:
         type: string
       uuid:
         type: string
+    type: object
+  dao.DeviceStatus:
+    properties:
+      jobStatus:
+        additionalProperties:
+          $ref: '#/definitions/dao.DeviceJobStatus'
+        type: object
     type: object
   dao.FilterCondition:
     properties:
@@ -282,6 +294,8 @@ definitions:
         $ref: '#/definitions/dao.DetectOptions'
       device:
         $ref: '#/definitions/dao.DeviceSpec'
+      enabled:
+        type: boolean
       id:
         type: integer
       input:
@@ -304,6 +318,7 @@ definitions:
         $ref: '#/definitions/dao.WorkflowSpec'
     required:
     - createTime
+    - enabled
     - input
     - kind
     - status
@@ -492,10 +507,6 @@ definitions:
         type: integer
       input:
         type: string
-      query:
-        type: string
-      resultFilter:
-        $ref: '#/definitions/dao.FilterCondition'
       videoSegment:
         $ref: '#/definitions/dao.VideoSegmentOptions'
       workflowId:
@@ -575,6 +586,18 @@ definitions:
     - query
     - uuid
     type: object
+  model.ExectorStatus:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-varnames:
+    - ExectorStatusStopped
+    - ExectorStatusRunning
+    - ExectorStatusFinished
+    - ExectorStatusFailed
   model.JobKind:
     enum:
     - detect
@@ -972,6 +995,43 @@ paths:
           schema:
             $ref: '#/definitions/server.ErrorResponse'
       summary: 注册设备
+      tags:
+      - 设备
+  /api/v1/device/report-status:
+    post:
+      consumes:
+      - application/json
+      description: 上报设备状态
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      - description: 设备状态
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.DeviceStatus'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上报成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 上报设备状态
       tags:
       - 设备
   /api/v1/device/unregister:

@@ -2,20 +2,12 @@ package exector
 
 import (
 	"lumina/internal/dao"
-)
-
-type ExectorStatus int
-
-const (
-	ExectorStatusStopped ExectorStatus = iota
-	ExectorStatusRunning
-	ExectorStatusFinished
-	ExectorStatusFailed
+	"lumina/internal/model"
 )
 
 type Executor interface {
 	Start() error
 	Stop()
 	Job() *dao.JobSpec
-	Status() ExectorStatus
+	Status() model.ExectorStatus
 }

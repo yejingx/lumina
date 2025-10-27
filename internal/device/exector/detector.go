@@ -25,6 +25,7 @@ import (
 	"lumina/internal/dao"
 	"lumina/internal/device/config"
 	"lumina/internal/device/metadata"
+	"lumina/internal/model"
 	"lumina/internal/utils"
 	"lumina/pkg/log"
 )
@@ -36,7 +37,7 @@ type Detector struct {
 	wg              *sync.WaitGroup
 	job             *dao.JobSpec
 	logger          *logrus.Entry
-	status          ExectorStatus
+	status          model.ExectorStatus
 	workDir         string
 	conf            *config.Config
 	nsqProducer     *nsq.Producer
@@ -77,7 +78,7 @@ func NewDetector(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx
 		cancel:          cancel,
 		wg:              &sync.WaitGroup{},
 		job:             job,
-		status:          ExectorStatusStopped,
+		status:          model.ExectorStatusStopped,
 		logger:          log.GetLogger(ctx).WithField("job", job.Uuid),
 		workDir:         workDir,
 		conf:            conf,
@@ -92,7 +93,7 @@ func (e *Detector) Job() *dao.JobSpec {
 	return e.job
 }
 
-func (e *Detector) Status() ExectorStatus {
+func (e *Detector) Status() model.ExectorStatus {
 	return e.status
 }
 
@@ -130,7 +131,7 @@ func (e *Detector) Start() error {
 	go func() {
 		defer e.wg.Done()
 		e.logger.Info("detect job started")
-		e.status = ExectorStatusRunning
+		e.status = model.ExectorStatusRunning
 		e.runJob(video)
 		e.logger.Info("detect job stopped")
 	}()
@@ -141,7 +142,7 @@ func (e *Detector) Start() error {
 func (e *Detector) Stop() {
 	e.cancel()
 	e.wg.Wait()
-	e.status = ExectorStatusStopped
+	e.status = model.ExectorStatusStopped
 }
 
 func (e *Detector) inferRoutine(frameCh <-chan gocv.Mat) {
@@ -230,7 +231,7 @@ func (e *Detector) runJob(input *gocv.VideoCapture) {
 		frame := gocv.NewMat()
 		if ok := input.Read(&frame); !ok {
 			frame.Close()
-			e.status = ExectorStatusFinished
+			e.status = model.ExectorStatusFinished
 			break
 		}
 

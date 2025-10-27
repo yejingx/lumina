@@ -165,6 +165,7 @@ export interface Job {
   uuid: string;
   kind: JobKind;
   status: JobStatus;
+  enabled: boolean;
   input: string;
   createTime: string;
   updateTime: string;
@@ -181,6 +182,7 @@ export interface JobSpec {
   uuid: string;
   kind: JobKind;
   status: JobStatus;
+  enabled: boolean;
   input: string;
   createTime: string;
   updateTime: string;
@@ -249,6 +251,7 @@ export interface Message {
   videoPath?: string;
   createTime: string;
   workflowResp?: WorkflowResp;
+  alerted: boolean;
 }
 
 export interface MessageSpec {
@@ -260,6 +263,7 @@ export interface MessageSpec {
   videoPath?: string;
   createTime: string;
   workflowResp?: WorkflowResp;
+  alerted: boolean;
 }
 
 export interface ListMessageResponse {

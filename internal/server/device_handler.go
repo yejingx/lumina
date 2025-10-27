@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"strconv"
@@ -406,4 +407,50 @@ func (s *Server) handleGetDeviceJobs(c *gin.Context) {
 		resp.Items = append(resp.Items, *spec)
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// handleReportDeviceStatus 上报设备状态
+// @Summary 上报设备状态
+// @Description 上报设备状态
+// @Tags 设备
+// @Accept json
+// @Produce json
+// @Param device_id path int true "设备ID"
+// @Param req body dao.DeviceStatus true "设备状态"
+// @Success 200 "上报成功"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 401 {object} ErrorResponse "未授权"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /api/v1/device/report-status [post]
+func (s *Server) handleReportDeviceStatus(c *gin.Context) {
+	var req dao.DeviceStatus
+	if err := c.ShouldBindJSON(&req); err != nil {
+		s.writeError(c, http.StatusBadRequest, err)
+		return
+	}
+	device := c.MustGet(deviceKey).(*model.Device)
+	for jobUuid, status := range req.JobStatus {
+		job, err := model.GetJobByUuid(jobUuid)
+		if err != nil {
+			s.logger.WithError(err).Errorf("get job %s failed", jobUuid)
+			continue
+		} else if job == nil {
+			s.logger.Errorf("job %s not found", jobUuid)
+			continue
+		}
+		if job.Status == status.ExectorStatus {
+			continue
+		}
+
+		job.Status = status.ExectorStatus
+		if err := model.UpdateJobStatus(job.Id, job.Status); err != nil {
+			s.logger.WithError(err).Errorf("update job %s failed", jobUuid)
+			continue
+		}
+	}
+	device.LastPingTime = sql.NullTime{Time: time.Now(), Valid: true}
+	if err := model.UpdateDevice(device); err != nil {
+		s.logger.WithError(err).Errorf("update device %d failed", device.Id)
+	}
+	c.JSON(http.StatusOK, gin.H{})
 }

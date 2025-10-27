@@ -24,7 +24,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { jobApi } from '../../services/api';
 import type { Job, ListParams } from '../../types';
-import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/helpers';
+import { formatDate, handleApiError, getDeleteConfirmConfig, isOlderThanMinutes } from '../../utils/helpers';
 import { JOB_STATUS_MAP, JOB_KIND_MAP, DEFAULT_PAGE_SIZE } from '../../utils/constants';
 import JobForm from './JobForm';
 
@@ -185,7 +185,12 @@ const JobList: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status: string) => {
+      render: (status: string, record: Job) => {
+        const lastPing = record?.device?.lastPingTime;
+        const isUnknown = isOlderThanMinutes(lastPing, 10);
+        if (isUnknown) {
+          return <Tag color="default">未知</Tag>;
+        }
         const statusInfo = JOB_STATUS_MAP[status as keyof typeof JOB_STATUS_MAP] || {
           text: status,
           color: 'default',
@@ -220,7 +225,7 @@ const JobList: React.FC = () => {
             onClick={() => handleEdit(record)}
             title="编辑"
           />
-          {record.status === 'stopped' && (
+          {!record.enabled && (
             <Button
               type="text"
               size="small"
@@ -230,7 +235,7 @@ const JobList: React.FC = () => {
               style={{ color: '#52c41a' }}
             />
           )}
-          {record.status === 'running' && (
+          {record.enabled && (
             <Button
               type="text"
               size="small"

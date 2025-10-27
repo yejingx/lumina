@@ -217,7 +217,7 @@ func (s *Server) handleListJobs(c *gin.Context) {
 // @Router /api/v1/job/{job_id}/start [put]
 func (s *Server) handleStartJob(c *gin.Context) {
 	job := c.MustGet(jobKey).(*model.Job)
-	job.Status = model.JobStatusRunning
+	job.Enabled = true
 	if err := model.UpdateJob(job); err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
 		return
@@ -239,7 +239,7 @@ func (s *Server) handleStartJob(c *gin.Context) {
 // @Router /api/v1/job/{job_id}/stop [put]
 func (s *Server) handleStopJob(c *gin.Context) {
 	job := c.MustGet(jobKey).(*model.Job)
-	job.Status = model.JobStatusStopped
+	job.Enabled = false
 	if err := model.UpdateJob(job); err != nil {
 		s.writeError(c, http.StatusInternalServerError, err)
 		return

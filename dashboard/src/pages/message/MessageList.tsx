@@ -164,7 +164,7 @@ const MessageList: React.FC = () => {
       title: '任务ID',
       dataIndex: 'jobId',
       key: 'jobId',
-      width: 150,
+      width: 180,
       render: (jobId: number) => (
         <Text>{getJobName(jobId)}</Text>
       ),
@@ -179,7 +179,7 @@ const MessageList: React.FC = () => {
       title: '工作流回答',
       dataIndex: 'workflowResp',
       key: 'workflowResp',
-      width: 400,
+      width: 350,
       render: (workflowResp: any) => (
         <pre style={{
           maxHeight: '100px',

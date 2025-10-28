@@ -23,7 +23,7 @@ import { formatDate, handleApiError, getDeleteConfirmConfig } from '../../utils/
 import { DEFAULT_PAGE_SIZE } from '../../utils/constants';
 
 const { Search } = Input;
-const { Text } = Typography;
+const { Text, Link } = Typography;
 
 const DeviceList: React.FC = () => {
   const navigate = useNavigate();
@@ -103,10 +103,10 @@ const DeviceList: React.FC = () => {
       key: 'uuid',
       width: 200,
       ellipsis: true,
-      render: (uuid: string) => (
-        <Text code copyable={false} ellipsis style={{ maxWidth: 150 }}>
+      render: (uuid: string, record: Device) => (
+        <Link onClick={() => handleView(record)} ellipsis style={{ maxWidth: 150 }}>
           {uuid}
-        </Text>
+        </Link>
       ),
     },
     {

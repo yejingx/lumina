@@ -140,6 +140,11 @@ const WorkflowList: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      render: (name: string, record: Workflow) => (
+        <Button type="link" style={{ padding: 0 }} onClick={() => handleView(record)}>
+          {name}
+        </Button>
+      ),
     },
     {
       title: '查询问题',

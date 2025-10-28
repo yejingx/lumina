@@ -59,6 +59,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&Conversation{},
 		&ChatMessage{},
 		&AlertMessage{},
+		&Camera{},
 	} {
 		err := db.AutoMigrate(model)
 		if err != nil {

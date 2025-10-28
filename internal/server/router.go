@@ -65,6 +65,14 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	workflow.PUT("/:workflow_id", s.handleUpdateWorkflow)
 	workflow.DELETE("/:workflow_id", s.handleDeleteWorkflow)
 
+	// Camera routes
+	camera := apiV1.Group("/camera")
+	camera.GET("", s.handleListCameras)
+	camera.POST("", s.handleCreateCamera)
+	camera.GET("/:camera_id", s.handleGetCamera)
+	camera.PUT("/:camera_id", s.handleUpdateCamera)
+	camera.DELETE("/:camera_id", s.handleDeleteCamera)
+
 	job := apiV1.Group("/job")
 	job.Use(SetJobToContext())
 	job.GET("", s.handleListJobs)

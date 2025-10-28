@@ -10,6 +10,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   RobotOutlined,
+  CameraOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
@@ -49,6 +50,11 @@ const MainLayout: React.FC = () => {
       key: '/workflows',
       icon: <PartitionOutlined />,
       label: '工作流管理',
+    },
+    {
+      key: '/cameras',
+      icon: <CameraOutlined />,
+      label: '摄像头管理',
     },
     {
       key: '/users',

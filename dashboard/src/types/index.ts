@@ -329,6 +329,66 @@ export interface ListWorkflowResponse {
   total: number;
 }
 
+// 摄像头类型
+export type CameraProtocol = 'rtsp' | 'rtmp';
+
+export interface Camera {
+  id: number;
+  uuid: string;
+  name: string;
+  protocol: CameraProtocol;
+  ip?: string;
+  port?: number;
+  path?: string;
+  username?: string;
+  password?: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface CameraSpec {
+  id: number;
+  uuid: string;
+  name: string;
+  protocol: CameraProtocol;
+  ip?: string;
+  port?: number;
+  path?: string;
+  username?: string;
+  password?: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface CreateCameraRequest {
+  name: string;
+  protocol: CameraProtocol;
+  ip?: string;
+  port?: number;
+  path?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface CreateCameraResponse {
+  uuid: string;
+}
+
+export interface UpdateCameraRequest {
+  name?: string;
+  protocol?: CameraProtocol;
+  ip?: string;
+  port?: number;
+  path?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface ListCamerasResponse {
+  items: Camera[];
+  total: number;
+}
+
 export interface ListParams {
   start: number;
   limit: number;

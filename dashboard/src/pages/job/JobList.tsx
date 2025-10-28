@@ -146,7 +146,16 @@ const JobList: React.FC = () => {
       key: 'uuid',
       width: 200,
       ellipsis: true,
-      render: (uuid: string, record: Job) => uuid || record.id || '-',
+      render: (uuid: string, record: Job) => (
+        <Button
+          type="link"
+          size="small"
+          onClick={() => handleView(record)}
+          style={{ padding: 0 }}
+        >
+          {uuid || record.id || '-'}
+        </Button>
+      ),
     },
     {
       title: '类型',

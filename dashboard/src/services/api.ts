@@ -40,6 +40,13 @@ import type {
   WorkflowSpec,
   UpdateWorkflowRequest,
 
+  // Camera types
+  ListCamerasResponse,
+  CreateCameraRequest,
+  CreateCameraResponse,
+  CameraSpec,
+  UpdateCameraRequest,
+
   ListParams,
 } from '../types';
 
@@ -203,6 +210,29 @@ export const workflowApi = {
   // 删除工作流
   delete: (workflowId: number): Promise<void> =>
     api.delete(`/workflow/${workflowId}`),
+};
+
+// 摄像头 API
+export const cameraApi = {
+  // 获取摄像头列表
+  list: (params: ListParams): Promise<ListCamerasResponse> =>
+    api.get('/camera', { params }),
+
+  // 获取摄像头详情
+  get: (cameraId: number): Promise<CameraSpec> =>
+    api.get(`/camera/${cameraId}`),
+
+  // 创建摄像头
+  create: (data: CreateCameraRequest): Promise<CreateCameraResponse> =>
+    api.post('/camera', data),
+
+  // 更新摄像头
+  update: (cameraId: number, data: Partial<UpdateCameraRequest>): Promise<CameraSpec> =>
+    api.put(`/camera/${cameraId}`, data),
+
+  // 删除摄像头
+  delete: (cameraId: number): Promise<void> =>
+    api.delete(`/camera/${cameraId}`),
 };
 
 export default api;

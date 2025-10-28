@@ -9,6 +9,7 @@ import { DeviceList, DeviceDetail } from './pages/device';
 import { WorkflowList, WorkflowDetail } from './pages/workflow';
 import { AccessTokenList, AccessTokenDetail } from './pages/access-token';
 import { UserList } from './pages/user';
+import { CameraList, CameraDetail, CameraForm } from './pages/camera';
 import JobFormPage from './pages/job/JobFormPage';
 import AgentPage from './pages/agent/AgentPage';
 
@@ -37,6 +38,12 @@ function App() {
             {/* 工作流路由 */}
             <Route path="workflows" element={<WorkflowList />} />
             <Route path="workflows/:id" element={<WorkflowDetail />} />
+
+            {/* 摄像头路由 */}
+            <Route path="cameras" element={<CameraList />} />
+            <Route path="cameras/new" element={<CameraForm />} />
+            <Route path="cameras/:id" element={<CameraDetail />} />
+            <Route path="cameras/:id/edit" element={<CameraForm />} />
 
             {/* 接入凭证路由 */}
             <Route path="access-tokens" element={<AccessTokenList />} />

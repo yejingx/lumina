@@ -36,7 +36,7 @@ const DeviceDetail: React.FC = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [tokenVisible, setTokenVisible] = useState(false);
 
-  // 获取设备详情
+  // 获取主机详情
   const fetchDeviceDetail = async () => {
     if (!id) return;
     
@@ -46,7 +46,7 @@ const DeviceDetail: React.FC = () => {
       const response = await deviceApi.get(deviceId);
       setDevice(response);
     } catch (error) {
-      handleApiError(error, '获取设备详情失败');
+      handleApiError(error, '获取主机详情失败');
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ const DeviceDetail: React.FC = () => {
     if (!device) return;
     
     Modal.confirm({
-      ...getDeleteConfirmConfig(`删除设备 "${device.uuid}"`),
+      ...getDeleteConfirmConfig(`删除主机 "${device.uuid}"`),
       onOk: async () => {
         try {
           await deviceApi.delete(device.id);
@@ -126,7 +126,7 @@ const DeviceDetail: React.FC = () => {
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          <p>设备不存在或已被删除</p>
+          <p>主机不存在或已被删除</p>
           <Button type="primary" onClick={handleBack}>
             返回列表
           </Button>
@@ -172,10 +172,10 @@ const DeviceDetail: React.FC = () => {
         </Space>
       </Card>
 
-      <Card title={`设备详情 - ${device.uuid}`}>
+      <Card title={`主机详情 - ${device.uuid}`}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="设备ID">{device.id}</Descriptions.Item>
-          <Descriptions.Item label="设备UUID">
+          <Descriptions.Item label="主机ID">{device.id}</Descriptions.Item>
+          <Descriptions.Item label="主机UUID">
             <Space>
               <Tag color="blue">{device.uuid}</Tag>
               <Button
@@ -187,7 +187,7 @@ const DeviceDetail: React.FC = () => {
               />
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="设备令牌" span={2}>
+          <Descriptions.Item label="主机令牌" span={2}>
             <Space>
               <Text code copyable={false} style={{ maxWidth: 300 }}>
                 {formatToken(device.token)}
@@ -218,7 +218,7 @@ const DeviceDetail: React.FC = () => {
       </Card>
 
       <Drawer
-        title="编辑设备"
+        title="编辑主机"
         width={600}
         open={drawerVisible}
         onClose={() => setDrawerVisible(false)}

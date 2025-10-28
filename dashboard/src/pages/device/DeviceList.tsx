@@ -52,7 +52,7 @@ const DeviceList: React.FC = () => {
     return `${diffDay}天前`;
   };
 
-  // 获取设备列表
+  // 获取主机列表
   const fetchDevices = async () => {
     setLoading(true);
     try {
@@ -64,7 +64,7 @@ const DeviceList: React.FC = () => {
       setDevices(response.devices || []);
       setTotal(response.total || 0);
     } catch (error) {
-      handleApiError(error, '获取设备列表失败');
+      handleApiError(error, '获取主机列表失败');
     } finally {
       setLoading(false);
     }
@@ -74,10 +74,10 @@ const DeviceList: React.FC = () => {
     fetchDevices();
   }, [current, pageSize]);
 
-  // 处理删除设备
+  // 处理删除主机
   const handleDelete = (device: Device) => {
     Modal.confirm({
-      ...getDeleteConfirmConfig(`删除设备 "${device.uuid}"`),
+      ...getDeleteConfirmConfig(`删除主机 "${device.uuid}"`),
       onOk: async () => {
         try {
           await deviceApi.delete(device.id);
@@ -98,7 +98,7 @@ const DeviceList: React.FC = () => {
   // 表格列配置
   const columns: ColumnsType<Device> = [
     {
-      title: '设备UUID',
+      title: 'UUID',
       dataIndex: 'uuid',
       key: 'uuid',
       width: 200,
@@ -110,7 +110,7 @@ const DeviceList: React.FC = () => {
       ),
     },
     {
-      title: '设备名称',
+      title: '主机名称',
       dataIndex: 'name',
       key: 'name',
       width: 250,
@@ -178,7 +178,7 @@ const DeviceList: React.FC = () => {
         </Space>
         <Space style={{ float: 'right' }}>
           <Search
-            placeholder="搜索设备UUID"
+            placeholder="搜索UUID"
             allowClear
             style={{ width: 200 }}
             value={searchText}

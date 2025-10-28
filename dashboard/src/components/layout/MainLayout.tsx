@@ -18,6 +18,7 @@ const { Header, Sider, Content } = Layout;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [openKeysState, setOpenKeysState] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -26,6 +27,11 @@ const MainLayout: React.FC = () => {
 
   // 菜单项配置
   const menuItems = [
+    {
+      key: '/workflows',
+      icon: <PartitionOutlined />,
+      label: '工作流管理',
+    },
     {
       key: '/jobs',
       icon: <FileTextOutlined />,
@@ -37,24 +43,26 @@ const MainLayout: React.FC = () => {
       label: '消息管理',
     },
     {
-      key: '/devices',
+      key: 'devices-root',
       icon: <DesktopOutlined />,
       label: '设备管理',
-    },
-    {
-      key: '/access-tokens',
-      icon: <KeyOutlined />,
-      label: '接入凭证',
-    },
-    {
-      key: '/workflows',
-      icon: <PartitionOutlined />,
-      label: '工作流管理',
-    },
-    {
-      key: '/cameras',
-      icon: <CameraOutlined />,
-      label: '摄像头管理',
+      children: [
+        {
+          key: '/devices',
+          icon: <DesktopOutlined />,
+          label: '主机管理',
+        },
+        {
+          key: '/access-tokens',
+          icon: <KeyOutlined />,
+          label: '接入凭证',
+        },
+        {
+          key: '/cameras',
+          icon: <CameraOutlined />,
+          label: '摄像头管理',
+        },
+      ],
     },
     {
       key: '/users',
@@ -73,16 +81,30 @@ const MainLayout: React.FC = () => {
     navigate(key);
   };
 
-  // 获取当前选中的菜单项
-  const getSelectedKeys = () => {
+  // 根据当前路径匹配选中与展开菜单
+  const getMenuState = () => {
     const path = location.pathname;
-    // 匹配路径前缀
-    for (const item of menuItems) {
-      if (path.startsWith(item.key)) {
-        return [item.key];
+
+    const dfs = (items: any[], parentKey?: string): { selected?: string; openKeys?: string[] } => {
+      for (const item of items) {
+        if (item.children && Array.isArray(item.children)) {
+          const res = dfs(item.children, item.key);
+          if (res.selected) {
+            return { selected: res.selected, openKeys: parentKey ? [parentKey, item.key] : [item.key] };
+          }
+        }
+        if (typeof item.key === 'string' && item.key.startsWith('/') && path.startsWith(item.key)) {
+          return { selected: item.key, openKeys: parentKey ? [parentKey] : [] };
+        }
       }
-    }
-    return [];
+      return {};
+    };
+
+    const { selected, openKeys } = dfs(menuItems);
+    const selectedKeys = selected ? [selected] : [];
+    const routeOpenKeys = openKeys || [];
+    const mergedOpenKeys = Array.from(new Set([...(openKeysState || []), ...routeOpenKeys]));
+    return { selectedKeys, openKeys: mergedOpenKeys };
   };
 
   return (
@@ -117,9 +139,11 @@ const MainLayout: React.FC = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={getSelectedKeys()}
+          selectedKeys={getMenuState().selectedKeys}
+          openKeys={getMenuState().openKeys}
           items={menuItems}
           onClick={handleMenuClick}
+          onOpenChange={(keys) => setOpenKeysState(keys as string[])}
         />
       </Sider>
       <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>

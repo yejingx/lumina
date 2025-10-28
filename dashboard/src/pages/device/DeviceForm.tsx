@@ -30,17 +30,17 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ device, onSubmit, onCancel }) =
     setLoading(true);
     try {
       if (isEditing && device) {
-        // 注意：根据API接口，设备可能不支持直接更新，这里只是展示结构
+        // 注意：根据API接口，主机可能不支持直接更新，这里只是展示结构
         // 实际实现需要根据后端API调整
-        message.info('设备信息更新功能暂未实现');
+        message.info('主机信息更新功能暂未实现');
         onSubmit();
       } else {
-        // 创建设备通常通过注册接口
-        message.info('设备创建功能暂未实现');
+        // 创建主机通常通过注册接口
+        message.info('主机创建功能暂未实现');
         onSubmit();
       }
     } catch (error) {
-      handleApiError(error, isEditing ? '更新设备失败' : '创建设备失败');
+      handleApiError(error, isEditing ? '更新主机失败' : '创建主机失败');
     } finally {
       setLoading(false);
     }
@@ -54,23 +54,23 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ device, onSubmit, onCancel }) =
     >
       <Form.Item
         name="uuid"
-        label="设备UUID"
+        label="主机UUID"
         rules={[
-          { required: true, message: '请输入设备UUID' },
-          { max: 100, message: '设备UUID最多100个字符' },
+          { required: true, message: '请输入主机UUID' },
+          { max: 100, message: '主机UUID最多100个字符' },
         ]}
       >
-        <Input placeholder="请输入设备UUID" disabled={isEditing} />
+        <Input placeholder="请输入主机UUID" disabled={isEditing} />
       </Form.Item>
 
       <Form.Item
         name="token"
-        label="设备令牌"
+        label="主机令牌"
         rules={[
-          { required: true, message: '请输入设备令牌' },
+          { required: true, message: '请输入主机令牌' },
         ]}
       >
-        <Input.Password placeholder="请输入设备令牌" disabled={isEditing} />
+        <Input.Password placeholder="请输入主机令牌" disabled={isEditing} />
       </Form.Item>
 
       {isEditing && (

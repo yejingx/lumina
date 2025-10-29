@@ -2330,6 +2330,9 @@
                 "uuid"
             ],
             "properties": {
+                "bindDevice": {
+                    "$ref": "#/definitions/dao.DeviceSpec"
+                },
                 "createTime": {
                     "type": "string"
                 },
@@ -2461,6 +2464,9 @@
                 "protocol"
             ],
             "properties": {
+                "bindDeviceId": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },
@@ -3135,6 +3141,9 @@
         "dao.UpdateCameraRequest": {
             "type": "object",
             "properties": {
+                "bindDeviceId": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },

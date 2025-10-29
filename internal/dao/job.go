@@ -61,13 +61,17 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 	if err != nil {
 		return nil, err
 	}
+	cameraSpec, err := FromCameraModel(camera)
+	if err != nil {
+		return nil, err
+	}
 	j := &JobSpec{
 		Id:         job.Id,
 		Uuid:       job.Uuid,
 		Kind:       job.Kind,
 		Status:     job.Status.String(),
 		Enabled:    job.Enabled,
-		Camera:     *FromCameraModel(camera),
+		Camera:     *cameraSpec,
 		CreateTime: job.CreateTime.Format(time.RFC3339),
 		UpdateTime: job.UpdateTime.Format(time.RFC3339),
 	}

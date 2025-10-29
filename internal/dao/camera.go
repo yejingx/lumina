@@ -21,6 +21,7 @@ type CameraSpec struct {
 	Password   string               `json:"password"`
 	CreateTime string               `json:"createTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	UpdateTime string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	BindDevice *DeviceSpec          `json:"bindDevice,omitempty"`
 }
 
 func (c CameraSpec) Url() string {
@@ -45,9 +46,9 @@ func (c CameraSpec) Url() string {
 	return fmt.Sprintf("%s://%s:%d%s", c.Protocol, c.Ip, port, path)
 }
 
-func FromCameraModel(m *model.Camera) *CameraSpec {
+func FromCameraModel(m *model.Camera) (*CameraSpec, error) {
 	if m == nil {
-		return nil
+		return nil, nil
 	}
 	c := &CameraSpec{}
 	c.Id = m.Id
@@ -60,7 +61,14 @@ func FromCameraModel(m *model.Camera) *CameraSpec {
 	c.Username = m.Username
 	c.CreateTime = m.CreateTime.Format(time.RFC3339)
 	c.UpdateTime = m.UpdateTime.Format(time.RFC3339)
-	return c
+	if m.BindDeviceId != 0 {
+		dev, err := m.BindDevice()
+		if err != nil {
+			return nil, err
+		}
+		c.BindDevice = FromDeviceModel(dev)
+	}
+	return c, nil
 }
 
 type ListCamerasRequest struct {
@@ -74,25 +82,27 @@ type ListCamerasResponse struct {
 }
 
 type CreateCameraRequest struct {
-	Name     string               `json:"name" binding:"required"`
-	Protocol model.CameraProtocol `json:"protocol" binding:"required"`
-	Ip       string               `json:"ip" binding:"required"`
-	Port     int                  `json:"port"`
-	Path     string               `json:"path"`
-	Username string               `json:"username"`
-	Password string               `json:"password"`
+	Name         string               `json:"name" binding:"required"`
+	Protocol     model.CameraProtocol `json:"protocol" binding:"required"`
+	Ip           string               `json:"ip" binding:"required"`
+	Port         int                  `json:"port"`
+	Path         string               `json:"path"`
+	Username     string               `json:"username"`
+	Password     string               `json:"password"`
+	BindDeviceId int                  `json:"bindDeviceId"`
 }
 
 func (c *CreateCameraRequest) ToModel() *model.Camera {
 	return &model.Camera{
-		Uuid:     str.GenDeviceId(16),
-		Name:     c.Name,
-		Protocol: c.Protocol,
-		Ip:       c.Ip,
-		Port:     c.Port,
-		Path:     c.Path,
-		Username: c.Username,
-		Password: c.Password,
+		Uuid:         str.GenDeviceId(16),
+		Name:         c.Name,
+		Protocol:     c.Protocol,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		BindDeviceId: c.BindDeviceId,
 	}
 }
 
@@ -101,13 +111,14 @@ type CreateCameraResponse struct {
 }
 
 type UpdateCameraRequest struct {
-	Name     *string               `json:"name"`
-	Protocol *model.CameraProtocol `json:"protocol"`
-	Ip       *string               `json:"ip"`
-	Port     *int                  `json:"port"`
-	Path     *string               `json:"path"`
-	Username *string               `json:"username"`
-	Password *string               `json:"password"`
+	Name         *string               `json:"name"`
+	Protocol     *model.CameraProtocol `json:"protocol"`
+	Ip           *string               `json:"ip"`
+	Port         *int                  `json:"port"`
+	Path         *string               `json:"path"`
+	Username     *string               `json:"username"`
+	Password     *string               `json:"password"`
+	BindDeviceId *int                  `json:"bindDeviceId"`
 }
 
 func (req *UpdateCameraRequest) UpdateModel(c *model.Camera) {
@@ -131,5 +142,8 @@ func (req *UpdateCameraRequest) UpdateModel(c *model.Camera) {
 	}
 	if req.Password != nil {
 		c.Password = *req.Password
+	}
+	if req.BindDeviceId != nil {
+		c.BindDeviceId = *req.BindDeviceId
 	}
 }

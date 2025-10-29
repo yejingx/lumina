@@ -29,6 +29,8 @@ definitions:
     type: object
   dao.CameraSpec:
     properties:
+      bindDevice:
+        $ref: '#/definitions/dao.DeviceSpec'
       createTime:
         type: string
       id:
@@ -118,6 +120,8 @@ definitions:
     type: object
   dao.CreateCameraRequest:
     properties:
+      bindDeviceId:
+        type: integer
       ip:
         type: string
       name:
@@ -568,6 +572,8 @@ definitions:
     type: object
   dao.UpdateCameraRequest:
     properties:
+      bindDeviceId:
+        type: integer
       ip:
         type: string
       name:

@@ -2341,6 +2341,9 @@ const docTemplate = `{
                 "uuid"
             ],
             "properties": {
+                "bindDevice": {
+                    "$ref": "#/definitions/dao.DeviceSpec"
+                },
                 "createTime": {
                     "type": "string"
                 },
@@ -2472,6 +2475,9 @@ const docTemplate = `{
                 "protocol"
             ],
             "properties": {
+                "bindDeviceId": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },
@@ -3146,6 +3152,9 @@ const docTemplate = `{
         "dao.UpdateCameraRequest": {
             "type": "object",
             "properties": {
+                "bindDeviceId": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },

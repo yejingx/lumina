@@ -15,17 +15,29 @@ const (
 )
 
 type Camera struct {
-	Id         int            `gorm:"primaryKey"`
-	Uuid       string         `gorm:"type:char(96);unique"`
-	Name       string         `gorm:"type:char(96)"`
-	Protocol   CameraProtocol `gorm:"type:char(96)"`
-	Ip         string         `gorm:"type:char(96)"`
-	Port       int            `gorm:"type:int"`
-	Path       string         `gorm:"type:char(96)"`
-	Username   string         `gorm:"type:char(96)"`
-	Password   string         `gorm:"type:char(96)"`
-	CreateTime time.Time      `gorm:"datetime;autoCreateTime"`
-	UpdateTime time.Time      `gorm:"datetime;autoCreateTime;autoUpdateTime"`
+	Id           int            `gorm:"primaryKey"`
+	Uuid         string         `gorm:"type:char(96);unique"`
+	Name         string         `gorm:"type:char(96)"`
+	Protocol     CameraProtocol `gorm:"type:char(96)"`
+	Ip           string         `gorm:"type:char(96)"`
+	Port         int            `gorm:"type:int"`
+	Path         string         `gorm:"type:char(96)"`
+	Username     string         `gorm:"type:char(96)"`
+	Password     string         `gorm:"type:char(96)"`
+	CreateTime   time.Time      `gorm:"datetime;autoCreateTime"`
+	UpdateTime   time.Time      `gorm:"datetime;autoCreateTime;autoUpdateTime"`
+	BindDeviceId int            `gorm:"type:int"`
+}
+
+func (c *Camera) BindDevice() (*Device, error) {
+	if c.BindDeviceId == 0 {
+		return nil, nil
+	}
+	dev, err := GetDeviceById(c.BindDeviceId)
+	if err != nil {
+		return nil, err
+	}
+	return dev, nil
 }
 
 func CreateCamera(camera *Camera) error {

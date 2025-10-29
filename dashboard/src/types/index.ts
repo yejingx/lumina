@@ -344,6 +344,7 @@ export interface Camera {
   password?: string;
   createTime: string;
   updateTime: string;
+  bindDevice?: DeviceSpec;
 }
 
 export interface CameraSpec {
@@ -358,6 +359,7 @@ export interface CameraSpec {
   password?: string;
   createTime: string;
   updateTime: string;
+  bindDevice?: DeviceSpec;
 }
 
 export interface CreateCameraRequest {
@@ -368,6 +370,7 @@ export interface CreateCameraRequest {
   path?: string;
   username?: string;
   password?: string;
+  bindDeviceId?: number;
 }
 
 export interface CreateCameraResponse {
@@ -382,6 +385,7 @@ export interface UpdateCameraRequest {
   path?: string;
   username?: string;
   password?: string;
+  bindDeviceId?: number;
 }
 
 export interface ListCamerasResponse {

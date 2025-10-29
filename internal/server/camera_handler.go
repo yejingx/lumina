@@ -69,7 +69,11 @@ func (s *Server) handleGetCamera(c *gin.Context) {
 		return
 	}
 
-	spec := dao.FromCameraModel(cam)
+	spec, err := dao.FromCameraModel(cam)
+	if err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
 	c.JSON(http.StatusOK, spec)
 }
 
@@ -186,7 +190,12 @@ func (s *Server) handleListCameras(c *gin.Context) {
 		Total: total,
 	}
 	for _, cam := range items {
-		resp.Items = append(resp.Items, *dao.FromCameraModel(&cam))
+		camSpec, err := dao.FromCameraModel(&cam)
+		if err != nil {
+			s.writeError(c, http.StatusInternalServerError, err)
+			return
+		}
+		resp.Items = append(resp.Items, *camSpec)
 	}
 	c.JSON(http.StatusOK, resp)
 }

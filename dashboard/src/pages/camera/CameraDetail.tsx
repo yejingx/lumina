@@ -125,6 +125,9 @@ const CameraDetail: React.FC = () => {
             <Descriptions.Item label="ID">{camera.id}</Descriptions.Item>
             <Descriptions.Item label="UUID">{camera.uuid}</Descriptions.Item>
             <Descriptions.Item label="名称">{camera.name}</Descriptions.Item>
+            <Descriptions.Item label="绑定设备">
+              {camera.bindDevice?.name || ''}
+            </Descriptions.Item>
             <Descriptions.Item label="协议">
               <Tag color={getProtocolColor(camera.protocol)}>
                 {camera.protocol.toUpperCase()}

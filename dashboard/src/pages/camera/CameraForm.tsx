@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, InputNumber, Button, Card, message, Space } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { cameraApi } from '../../services/api';
-import type { CameraSpec, CreateCameraRequest, UpdateCameraRequest } from '../../types';
+import { cameraApi, deviceApi } from '../../services/api';
+import type { CameraSpec, CreateCameraRequest, UpdateCameraRequest, DeviceSpec } from '../../types';
 
 const { Option } = Select;
 
@@ -20,6 +20,7 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [camera, setCamera] = useState<CameraSpec | null>(null);
+  const [devices, setDevices] = useState<DeviceSpec[]>([]);
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
 
@@ -41,6 +42,7 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
         path: response.path,
         username: response.username,
         password: response.password,
+        bindDeviceId: response.bindDevice?.id,
       });
     } catch (error) {
       message.error('获取摄像头信息失败');
@@ -56,6 +58,21 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveId]);
 
+  // 获取设备列表
+  const fetchDevices = async () => {
+    try {
+      const resp = await deviceApi.list({ start: 0, limit: 100 });
+      setDevices(resp.devices || []);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('获取设备列表失败:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
   const handleFinish = async (values: any) => {
     setLoading(true);
     try {
@@ -68,6 +85,7 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
           path: values.path,
           username: values.username,
           password: values.password,
+          bindDeviceId: values.bindDeviceId,
         };
         await cameraApi.update(camera.id, updateData);
         message.success('更新成功');
@@ -80,6 +98,7 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
           path: values.path,
           username: values.username,
           password: values.password,
+          bindDeviceId: values.bindDeviceId,
         };
         await cameraApi.create(createData);
         message.success('创建成功');
@@ -156,6 +175,16 @@ const CameraForm: React.FC<CameraFormProps> = ({ mode = 'page', cameraId, onSubm
 
       <Form.Item label="密码" name="password">
         <Input.Password placeholder="请输入密码（可选）" />
+      </Form.Item>
+
+      <Form.Item label="绑定设备" name="bindDeviceId">
+        <Select placeholder="请选择设备（可选）" allowClear>
+          {devices.map((device) => (
+            <Option key={device.id} value={device.id}>
+              {device.name} ({device.uuid})
+            </Option>
+          ))}
+        </Select>
       </Form.Item>
 
       <Form.Item>

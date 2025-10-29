@@ -1,10 +1,12 @@
 package dao
 
 import (
-	"lumina/pkg/str"
+	"fmt"
+	"strings"
 	"time"
 
 	"lumina/internal/model"
+	"lumina/pkg/str"
 )
 
 type CameraSpec struct {
@@ -19,6 +21,28 @@ type CameraSpec struct {
 	Password   string               `json:"password"`
 	CreateTime string               `json:"createTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	UpdateTime string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
+}
+
+func (c CameraSpec) Url() string {
+	port := c.Port
+	if port == 0 {
+		switch c.Protocol {
+		case model.CameraProtocolRtmp:
+			port = 1935
+		case model.CameraProtocolRtsp:
+			port = 554
+		}
+	}
+
+	path := c.Path
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	if c.Username != "" && c.Password != "" {
+		return fmt.Sprintf("%s://%s:%s@%s:%d%s", c.Protocol, c.Username, c.Password, c.Ip, port, path)
+	}
+	return fmt.Sprintf("%s://%s:%d%s", c.Protocol, c.Ip, port, path)
 }
 
 func FromCameraModel(m *model.Camera) *CameraSpec {

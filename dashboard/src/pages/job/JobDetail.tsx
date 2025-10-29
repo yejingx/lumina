@@ -353,7 +353,9 @@ const JobDetail: React.FC = () => {
                 job.kind || '-'
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="输入">{job.input || '-'}</Descriptions.Item>
+            <Descriptions.Item label="摄像头">
+              {job?.camera ? `${job.camera.name} (${job.camera.uuid})` : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="关联设备">
               {job.device.name}
             </Descriptions.Item>

@@ -166,7 +166,7 @@ export interface Job {
   kind: JobKind;
   status: JobStatus;
   enabled: boolean;
-  input: string;
+  camera: CameraSpec;
   createTime: string;
   updateTime: string;
   detect?: DetectOptions;
@@ -183,7 +183,7 @@ export interface JobSpec {
   kind: JobKind;
   status: JobStatus;
   enabled: boolean;
-  input: string;
+  camera: CameraSpec;
   createTime: string;
   updateTime: string;
   detect?: DetectOptions;
@@ -197,7 +197,7 @@ export interface JobSpec {
 export interface CreateJobRequest {
   uuid?: string;
   kind: JobKind;
-  input: string;
+  cameraId: number;
   detect?: DetectOptions;
   videoSegment?: VideoSegmentOptions;
   deviceId: number;
@@ -207,7 +207,7 @@ export interface CreateJobRequest {
 export interface UpdateJobRequest {
   kind?: JobKind;
   status?: JobStatus;
-  input?: string;
+  cameraId?: number;
   detect?: DetectOptions;
   videoSegment?: VideoSegmentOptions;
   device?: DeviceSpec;

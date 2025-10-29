@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Input, Select, Button, message, InputNumber, Divider } from 'antd';
-import { jobApi, deviceApi, workflowApi } from '../../services/api';
-import type { Job, CreateJobRequest, JobKind, DetectOptions, VideoSegmentOptions, Workflow } from '../../types';
+import { jobApi, deviceApi, workflowApi, cameraApi } from '../../services/api';
+import type { Job, CreateJobRequest, JobKind, DetectOptions, VideoSegmentOptions, Workflow, Camera } from '../../types';
 import { handleApiError } from '../../utils/helpers';
 
 const { Option } = Select;
@@ -16,6 +16,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
   const [devices, setDevices] = React.useState<any[]>([]);
+  const [cameras, setCameras] = React.useState<Camera[]>([]);
   const [workflows, setWorkflows] = React.useState<Workflow[]>([]);
   const [selectedKind, setSelectedKind] = React.useState<JobKind>('detect');
 
@@ -42,6 +43,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
   React.useEffect(() => {
     fetchDevices();
     fetchWorkflows();
+    cameraApi.list({ start: 0, limit: 100 }).then((res) => setCameras(res.items || [])).catch(() => {});
   }, []);
 
   // 初始化表单数据
@@ -49,7 +51,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
     if (job) {
       const initialValues: any = {
         kind: job.kind,
-        input: job.input,
+        cameraId: (job as any)?.camera?.id,
         deviceId: job.device.id,
         // 后端返回的字段由 workflowId 改为 workflow 对象，这里取其 id 作为初始值
         workflowId: (job as any)?.workflow?.id,
@@ -87,7 +89,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
     try {
       const data: CreateJobRequest = {
         kind: values.kind,
-        input: values.input || '',
+        cameraId: values.cameraId,
         workflowId: values.workflowId,
         deviceId: values.deviceId,
       };
@@ -242,11 +244,17 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
       </Form.Item>
 
       <Form.Item
-        name="input"
-        label="输入"
-        rules={[{ required: true, message: '请输入任务输入' }]}
+        name="cameraId"
+        label="摄像头"
+        rules={[{ required: true, message: '请选择摄像头' }]}
       >
-        <Input placeholder="请输入任务输入" />
+        <Select placeholder="请选择摄像头" allowClear>
+          {cameras.map((cam) => (
+            <Option key={cam.id} value={cam.id}>
+              {cam.name} ({cam.uuid})
+            </Option>
+          ))}
+        </Select>
       </Form.Item>
 
       <Form.Item

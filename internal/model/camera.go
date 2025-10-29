@@ -2,8 +2,6 @@ package model
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -28,28 +26,6 @@ type Camera struct {
 	Password   string         `gorm:"type:char(96)"`
 	CreateTime time.Time      `gorm:"datetime;autoCreateTime"`
 	UpdateTime time.Time      `gorm:"datetime;autoCreateTime;autoUpdateTime"`
-}
-
-func (c Camera) Url() string {
-	port := c.Port
-	if port == 0 {
-		switch c.Protocol {
-		case CameraProtocolRtmp:
-			port = 1935
-		case CameraProtocolRtsp:
-			port = 554
-		}
-	}
-
-	path := c.Path
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	if c.Username != "" && c.Password != "" {
-		return fmt.Sprintf("%s://%s:%s@%s:%d%s", c.Protocol, c.Username, c.Password, c.Ip, port, path)
-	}
-	return fmt.Sprintf("%s://%s:%d%s", c.Protocol, c.Ip, port, path)
 }
 
 func CreateCamera(camera *Camera) error {

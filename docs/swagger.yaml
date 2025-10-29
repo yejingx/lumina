@@ -27,6 +27,38 @@ definitions:
       toolCall:
         $ref: '#/definitions/dao.ToolCallSpec'
     type: object
+  dao.CameraSpec:
+    properties:
+      createTime:
+        type: string
+      id:
+        type: integer
+      ip:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      path:
+        type: string
+      port:
+        type: integer
+      protocol:
+        $ref: '#/definitions/model.CameraProtocol'
+      updateTime:
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    required:
+    - createTime
+    - ip
+    - name
+    - protocol
+    - updateTime
+    - uuid
+    type: object
   dao.ChatMessageSpec:
     properties:
       agentThoughts:
@@ -84,6 +116,32 @@ definitions:
       token:
         type: string
     type: object
+  dao.CreateCameraRequest:
+    properties:
+      ip:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      path:
+        type: string
+      port:
+        type: integer
+      protocol:
+        $ref: '#/definitions/model.CameraProtocol'
+      username:
+        type: string
+    required:
+    - ip
+    - name
+    - protocol
+    type: object
+  dao.CreateCameraResponse:
+    properties:
+      uuid:
+        type: string
+    type: object
   dao.CreateConversationRequest:
     properties:
       title:
@@ -98,12 +156,12 @@ definitions:
     type: object
   dao.CreateJobRequest:
     properties:
+      cameraId:
+        type: integer
       detect:
         $ref: '#/definitions/dao.DetectOptions'
       deviceId:
         type: integer
-      input:
-        type: string
       kind:
         $ref: '#/definitions/model.JobKind'
       query:
@@ -115,7 +173,7 @@ definitions:
       workflowId:
         type: integer
     required:
-    - input
+    - cameraId
     - kind
     type: object
   dao.CreateJobResponse:
@@ -288,6 +346,8 @@ definitions:
     type: object
   dao.JobSpec:
     properties:
+      camera:
+        $ref: '#/definitions/dao.CameraSpec'
       createTime:
         type: string
       detect:
@@ -298,8 +358,6 @@ definitions:
         type: boolean
       id:
         type: integer
-      input:
-        type: string
       kind:
         $ref: '#/definitions/model.JobKind'
       query:
@@ -317,9 +375,9 @@ definitions:
       workflow:
         $ref: '#/definitions/dao.WorkflowSpec'
     required:
+    - camera
     - createTime
     - enabled
-    - input
     - kind
     - status
     - updateTime
@@ -350,6 +408,15 @@ definitions:
       accessTokens:
         items:
           $ref: '#/definitions/dao.AccessTokenSpec'
+        type: array
+      total:
+        type: integer
+    type: object
+  dao.ListCamerasResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.CameraSpec'
         type: array
       total:
         type: integer
@@ -499,14 +566,31 @@ definitions:
       name:
         type: string
     type: object
+  dao.UpdateCameraRequest:
+    properties:
+      ip:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      path:
+        type: string
+      port:
+        type: integer
+      protocol:
+        $ref: '#/definitions/model.CameraProtocol'
+      username:
+        type: string
+    type: object
   dao.UpdateJobRequest:
     properties:
+      cameraId:
+        type: integer
       detect:
         $ref: '#/definitions/dao.DetectOptions'
       deviceId:
         type: integer
-      input:
-        type: string
       videoSegment:
         $ref: '#/definitions/dao.VideoSegmentOptions'
       workflowId:
@@ -586,6 +670,14 @@ definitions:
     - query
     - uuid
     type: object
+  model.CameraProtocol:
+    enum:
+    - rtmp
+    - rtsp
+    type: string
+    x-enum-varnames:
+    - CameraProtocolRtmp
+    - CameraProtocolRtsp
   model.ExectorStatus:
     enum:
     - 0
@@ -825,6 +917,184 @@ paths:
       summary: 创建用户
       tags:
       - 用户管理
+  /api/v1/camera:
+    get:
+      consumes:
+      - application/json
+      description: 列出摄像头
+      parameters:
+      - description: 分页起始位置
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: 分页每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 列出成功
+          schema:
+            $ref: '#/definitions/dao.ListCamerasResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 列出摄像头
+      tags:
+      - 摄像头
+    post:
+      consumes:
+      - application/json
+      description: 创建摄像头
+      parameters:
+      - description: 创建摄像头请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.CreateCameraRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/dao.CreateCameraResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 创建摄像头
+      tags:
+      - 摄像头
+  /api/v1/camera/{camera_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除摄像头
+      parameters:
+      - description: 摄像头ID
+        in: path
+        name: camera_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 删除摄像头
+      tags:
+      - 摄像头
+    get:
+      consumes:
+      - application/json
+      description: 获取摄像头
+      parameters:
+      - description: 摄像头ID
+        in: path
+        name: camera_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.CameraSpec'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 摄像头不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取摄像头
+      tags:
+      - 摄像头
+    put:
+      consumes:
+      - application/json
+      description: 更新摄像头
+      parameters:
+      - description: 摄像头ID
+        in: path
+        name: camera_id
+        required: true
+        type: integer
+      - description: 更新摄像头请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dao.UpdateCameraRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 摄像头不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 更新摄像头
+      tags:
+      - 摄像头
   /api/v1/device:
     get:
       consumes:

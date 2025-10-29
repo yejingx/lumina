@@ -107,7 +107,7 @@ func (e *VideoSegmentor) runJob() {
 	outputPattern := "segment_%Y%m%d_%H%M%S.mp4"
 
 	args := []string{
-		"-i", e.job.Input, // 输入视频流
+		"-i", e.job.Input(), // 输入视频流
 		"-c", "copy", // 复制编码，不重新编码
 		"-f", "segment", // 使用 segment 格式
 		"-segment_time", fmt.Sprintf("%d", interval), // 分段时间间隔

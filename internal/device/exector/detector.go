@@ -116,7 +116,7 @@ func (e *Detector) Start() error {
 		return errors.New("triton model is not ready")
 	}
 
-	video, err := gocv.VideoCaptureFile(e.job.Input)
+	video, err := gocv.VideoCaptureFile(e.job.Input())
 	if err != nil {
 		return fmt.Errorf("failed to open input video: %v", err)
 	}

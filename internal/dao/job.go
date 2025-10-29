@@ -38,7 +38,7 @@ type JobSpec struct {
 	Kind         model.JobKind        `json:"kind" binding:"required"`
 	Status       string               `json:"status" binding:"required"`
 	Enabled      bool                 `json:"enabled" binding:"required"`
-	Input        string               `json:"input" binding:"required"`
+	Camera       CameraSpec           `json:"camera" binding:"required"`
 	CreateTime   string               `json:"createTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	UpdateTime   string               `json:"updateTime" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
@@ -49,9 +49,17 @@ type JobSpec struct {
 	ResultFilter *FilterCondition     `json:"resultFilter,omitempty"`
 }
 
+func (j JobSpec) Input() string {
+	return j.Camera.Url()
+}
+
 func FromJobModel(job *model.Job) (*JobSpec, error) {
 	if job == nil {
 		return nil, errors.New("job is nil")
+	}
+	camera, err := model.GetCameraById(job.CameraId)
+	if err != nil {
+		return nil, err
 	}
 	j := &JobSpec{
 		Id:         job.Id,
@@ -59,7 +67,7 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 		Kind:       job.Kind,
 		Status:     job.Status.String(),
 		Enabled:    job.Enabled,
-		Input:      job.Input,
+		Camera:     *FromCameraModel(camera),
 		CreateTime: job.CreateTime.Format(time.RFC3339),
 		UpdateTime: job.UpdateTime.Format(time.RFC3339),
 	}
@@ -103,7 +111,7 @@ func FromJobModel(job *model.Job) (*JobSpec, error) {
 
 type CreateJobRequest struct {
 	Kind         model.JobKind        `json:"kind" binding:"required"`
-	Input        string               `json:"input" binding:"required"`
+	CameraId     int                  `json:"cameraId" binding:"required"`
 	DeviceId     int                  `json:"deviceId,omitempty"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
@@ -116,7 +124,7 @@ func (req *CreateJobRequest) ToModel() *model.Job {
 	job := &model.Job{
 		Uuid:       str.GenDeviceId(16),
 		Kind:       req.Kind,
-		Input:      req.Input,
+		CameraId:   req.CameraId,
 		Status:     model.ExectorStatusStopped,
 		WorkflowId: req.WorkflowId,
 		DeviceId:   req.DeviceId,
@@ -170,7 +178,7 @@ type CreateJobResponse struct {
 }
 
 type UpdateJobRequest struct {
-	Input        *string              `json:"input,omitempty"`
+	CameraId     *int                 `json:"cameraId,omitempty"`
 	Detect       *DetectOptions       `json:"detect,omitempty"`
 	VideoSegment *VideoSegmentOptions `json:"videoSegment,omitempty"`
 	WorkflowId   *int                 `json:"workflowId,omitempty"`
@@ -181,8 +189,8 @@ func (req *UpdateJobRequest) UpdateModel(job *model.Job) {
 	if req.DeviceId != nil {
 		job.DeviceId = *req.DeviceId
 	}
-	if req.Input != nil {
-		job.Input = *req.Input
+	if req.CameraId != nil {
+		job.CameraId = *req.CameraId
 	}
 	if req.WorkflowId != nil {
 		job.WorkflowId = *req.WorkflowId

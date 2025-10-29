@@ -332,6 +332,274 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/camera": {
+            "get": {
+                "description": "列出摄像头",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "列出摄像头",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分页起始位置",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分页每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "列出成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.ListCamerasResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建摄像头",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "创建摄像头",
+                "parameters": [
+                    {
+                        "description": "创建摄像头请求",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.CreateCameraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.CreateCameraResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/camera/{camera_id}": {
+            "get": {
+                "description": "获取摄像头",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "获取摄像头",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "摄像头ID",
+                        "name": "camera_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.CameraSpec"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "摄像头不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新摄像头",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "更新摄像头",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "摄像头ID",
+                        "name": "camera_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新摄像头请求",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.UpdateCameraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "摄像头不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除摄像头",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "删除摄像头",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "摄像头ID",
+                        "name": "camera_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/device": {
             "get": {
                 "description": "列出设备",
@@ -2062,6 +2330,52 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.CameraSpec": {
+            "type": "object",
+            "required": [
+                "createTime",
+                "ip",
+                "name",
+                "protocol",
+                "updateTime",
+                "uuid"
+            ],
+            "properties": {
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "$ref": "#/definitions/model.CameraProtocol"
+                },
+                "updateTime": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "dao.ChatMessageSpec": {
             "type": "object",
             "properties": {
@@ -2150,6 +2464,45 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.CreateCameraRequest": {
+            "type": "object",
+            "required": [
+                "ip",
+                "name",
+                "protocol"
+            ],
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "$ref": "#/definitions/model.CameraProtocol"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.CreateCameraResponse": {
+            "type": "object",
+            "properties": {
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "dao.CreateConversationRequest": {
             "type": "object",
             "properties": {
@@ -2172,18 +2525,18 @@ const docTemplate = `{
         "dao.CreateJobRequest": {
             "type": "object",
             "required": [
-                "input",
+                "cameraId",
                 "kind"
             ],
             "properties": {
+                "cameraId": {
+                    "type": "integer"
+                },
                 "detect": {
                     "$ref": "#/definitions/dao.DetectOptions"
                 },
                 "deviceId": {
                     "type": "integer"
-                },
-                "input": {
-                    "type": "string"
                 },
                 "kind": {
                     "$ref": "#/definitions/model.JobKind"
@@ -2457,15 +2810,18 @@ const docTemplate = `{
         "dao.JobSpec": {
             "type": "object",
             "required": [
+                "camera",
                 "createTime",
                 "enabled",
-                "input",
                 "kind",
                 "status",
                 "updateTime",
                 "uuid"
             ],
             "properties": {
+                "camera": {
+                    "$ref": "#/definitions/dao.CameraSpec"
+                },
                 "createTime": {
                     "type": "string"
                 },
@@ -2480,9 +2836,6 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
-                },
-                "input": {
-                    "type": "string"
                 },
                 "kind": {
                     "$ref": "#/definitions/model.JobKind"
@@ -2548,6 +2901,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dao.AccessTokenSpec"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dao.ListCamerasResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.CameraSpec"
                     }
                 },
                 "total": {
@@ -2776,17 +3143,43 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.UpdateCameraRequest": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "$ref": "#/definitions/model.CameraProtocol"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "dao.UpdateJobRequest": {
             "type": "object",
             "properties": {
+                "cameraId": {
+                    "type": "integer"
+                },
                 "detect": {
                     "$ref": "#/definitions/dao.DetectOptions"
                 },
                 "deviceId": {
                     "type": "integer"
-                },
-                "input": {
-                    "type": "string"
                 },
                 "videoSegment": {
                     "$ref": "#/definitions/dao.VideoSegmentOptions"
@@ -2905,6 +3298,17 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.CameraProtocol": {
+            "type": "string",
+            "enum": [
+                "rtmp",
+                "rtsp"
+            ],
+            "x-enum-varnames": [
+                "CameraProtocolRtmp",
+                "CameraProtocolRtsp"
+            ]
         },
         "model.ExectorStatus": {
             "type": "integer",

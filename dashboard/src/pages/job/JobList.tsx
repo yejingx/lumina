@@ -23,7 +23,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { jobApi } from '../../services/api';
-import type { Job, ListParams } from '../../types';
+import type { Job, ListParams, CameraSpec, DeviceSpec, WorkflowSpec } from '../../types';
 import { formatDate, handleApiError, getDeleteConfirmConfig, isOlderThanMinutes } from '../../utils/helpers';
 import { JOB_STATUS_MAP, JOB_KIND_MAP, DEFAULT_PAGE_SIZE } from '../../utils/constants';
 import JobForm from './JobForm';
@@ -104,6 +104,30 @@ const JobList: React.FC = () => {
     navigate(`/jobs/${identifier}`);
   };
 
+  // 处理查看摄像头详情
+  const handleViewCamera = (camera: CameraSpec | undefined) => {
+    const id = camera?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/cameras/${id}`);
+    }
+  };
+
+  // 处理查看设备详情
+  const handleViewDevice = (device: DeviceSpec | undefined) => {
+    const id = device?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/devices/${id}`);
+    }
+  };
+
+  // 处理查看工作流详情
+  const handleViewWorkflow = (workflow: WorkflowSpec | undefined) => {
+    const id = workflow?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/workflows/${id}`);
+    }
+  };
+
   // 处理启动任务
   const handleStart = async (job: Job) => {
     try {
@@ -144,7 +168,7 @@ const JobList: React.FC = () => {
       title: 'UUID',
       dataIndex: 'uuid',
       key: 'uuid',
-      width: 200,
+      width: 130,
       ellipsis: true,
       render: (uuid: string, record: Job) => (
         <Button
@@ -161,7 +185,7 @@ const JobList: React.FC = () => {
       title: '类型',
       dataIndex: 'kind',
       key: 'kind',
-      width: 120,
+      width: 80,
       render: (kind: string, record: Job) => {
         const jobKind = kind;
         if (jobKind) {
@@ -174,26 +198,71 @@ const JobList: React.FC = () => {
       },
     },
     {
+      title: '摄像头',
+      dataIndex: 'camera',
+      key: 'camera',
+      width: 100,
+      ellipsis: true,
+      render: (camera: any, record: Job) => {
+        if (!camera) return '-';
+        return (
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleViewCamera(camera)}
+            style={{ padding: 0 }}
+          >
+            {camera.name || camera.uuid || '-'}
+          </Button>
+        );
+      },
+    },
+    {
       title: '关联设备',
       dataIndex: 'device',
       key: 'device',
+      width: 100,
+      ellipsis: true,
       render: (device: any, record: Job) => {
-        return device.name || device.uuid;
+        if (!device) return '-';
+        return (
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleViewDevice(device)}
+            style={{ padding: 0 }}
+          >
+            {device.name || device.uuid || '-'}
+          </Button>
+        );
       },
     },
     {
       title: '工作流',
       dataIndex: 'workflow',
       key: 'workflow',
-      width: 160,
+      width: 100,
       ellipsis: true,
-      render: (_: any, record: Job) => record.workflow?.name || '-',
+      render: (_: any, record: Job) => {
+        const wf = record.workflow;
+        if (!wf) return '-';
+        return (
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleViewWorkflow(wf)}
+            style={{ padding: 0 }}
+          >
+            {wf.name || wf.uuid || '-'}
+          </Button>
+        );
+      },
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 50,
       render: (status: string, record: Job) => {
         const lastPing = record?.device?.lastPingTime;
         const isUnknown = isOlderThanMinutes(lastPing, 10);
@@ -211,13 +280,13 @@ const JobList: React.FC = () => {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      width: 180,
+      width: 120,
       render: (createTime: string, record: Job) => formatDate(createTime),
     },
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 120,
       render: (_, record) => (
         <Space size="small">
           <Button

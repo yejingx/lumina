@@ -98,7 +98,7 @@ type Job struct {
 	DeviceId     int                  `json:"device_id" gorm:"index"`
 	Uuid         string               `json:"uuid" gorm:"unique"`
 	Kind         JobKind              `json:"kind" gorm:"default:0"`
-	Input        string               `json:"input" gorm:"NOT NULL"`
+	CameraId     int                  `json:"camera_id" gorm:"NOT NULL"`
 	Status       ExectorStatus        `json:"status" gorm:"default:0"`
 	Enabled      bool                 `json:"enabled" gorm:"default:true"`
 	CreateTime   time.Time            `json:"create_time" gorm:"datetime;autoCreateTime"`

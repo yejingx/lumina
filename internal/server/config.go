@@ -39,15 +39,23 @@ type InfluxDBConfig struct {
 	Enabled bool   `yaml:"enabled"`
 }
 
+type MediaServerConfig struct {
+	Ip         string `yaml:"ip"`
+	Port       int    `yaml:"port"`
+	PathPrefix string `yaml:"pathPrefix"`
+}
+
 type Config struct {
-	Addr      string          `yaml:"addr"`
-	SSLCert   string          `yaml:"sslCert"`
-	SSLKey    string          `yaml:"sslKey"`
-	JwtSecret string          `yaml:"jwtSecret"`
-	DB        model.DBConfig  `yaml:"db"`
-	S3        S3Config        `yaml:"s3"`
-	LLM       agent.LLMConfig `yaml:"llm"`
-	InfluxDB  InfluxDBConfig  `yaml:"influxdb"`
+	Addr        string            `yaml:"addr"`
+	SSLCert     string            `yaml:"sslCert"`
+	SSLKey      string            `yaml:"sslKey"`
+	JwtSecret   string            `yaml:"jwtSecret"`
+	DB          model.DBConfig    `yaml:"db"`
+	S3          S3Config          `yaml:"s3"`
+	LLM         agent.LLMConfig   `yaml:"llm"`
+	InfluxDB    InfluxDBConfig    `yaml:"influxdb"`
+	MediaServer MediaServerConfig `yaml:"mediaServer"`
+	Redis       model.RedisConfig `yaml:"redis"`
 }
 
 func DefaultConfig() *Config {
@@ -72,6 +80,12 @@ func DefaultConfig() *Config {
 			Token:   "",
 			Enabled: false,
 		},
+		MediaServer: MediaServerConfig{
+			Ip:         "127.0.0.1",
+			Port:       1935,
+			PathPrefix: "/preview",
+		},
+		Redis: *model.DefaultRedisConfig(),
 	}
 }
 

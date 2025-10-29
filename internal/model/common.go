@@ -1,8 +1,10 @@
 package model
 
 import (
+	"context"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -10,6 +12,7 @@ import (
 const defaultSqlDsn = "root:123456@tcp(127.0.0.1:3306)/lumina?charset=utf8mb4&parseTime=True&loc=Local"
 
 var DB *gorm.DB
+var Redis *redis.Client
 
 type DBConfig struct {
 	DSN          string `yaml:"dsn"`
@@ -25,6 +28,37 @@ func DefaultDBConfig() *DBConfig {
 		MaxOpenConns: 1000,
 		MaxLifetime:  60,
 	}
+}
+
+type RedisConfig struct {
+	MasterName    string   `yaml:"masterName"`
+	SentinelAddrs []string `yaml:"sentinelAddrs"`
+	Password      string   `yaml:"password,omitempty"`
+	DB            int      `yaml:"db,omitempty"`
+}
+
+func DefaultRedisConfig() *RedisConfig {
+	return &RedisConfig{
+		MasterName:    "mymaster",
+		SentinelAddrs: []string{"127.0.0.1:26379"},
+		Password:      "",
+		DB:            0,
+	}
+}
+
+func InitRedis(cfg RedisConfig) (*redis.Client, error) {
+	cli := redis.NewFailoverClient(&redis.FailoverOptions{
+		MasterName:    cfg.MasterName,
+		SentinelAddrs: cfg.SentinelAddrs,
+		Password:      cfg.Password,
+		DB:            cfg.DB,
+	})
+	// Ping to validate connection at init time
+	if err := cli.Ping(context.Background()).Err(); err != nil {
+		return nil, err
+	}
+	Redis = cli
+	return cli, nil
 }
 
 func InitDB(dbConfig DBConfig) (*gorm.DB, error) {

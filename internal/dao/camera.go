@@ -147,3 +147,37 @@ func (req *UpdateCameraRequest) UpdateModel(c *model.Camera) {
 		c.BindDeviceId = *req.BindDeviceId
 	}
 }
+
+type PreviewTask struct {
+	TaskUuid   string `json:"taskUuid"`
+	PullAddr   string `json:"pullAddr"`
+	PushAddr   string `json:"pushAddr"`
+	ExpireTime string `json:"expireTime"`
+}
+
+func (t PreviewTask) Expired() bool {
+	if t.ExpireTime == "" {
+		return false
+	}
+	expireTime, err := time.Parse(time.RFC3339, t.ExpireTime)
+	if err != nil {
+		return false
+	}
+	return expireTime.Before(time.Now())
+}
+
+func FromPreviewTaskModel(m *model.PreviewTask) *PreviewTask {
+	if m == nil {
+		return nil
+	}
+	t := &PreviewTask{}
+	t.TaskUuid = m.TaskUuid
+	t.PullAddr = m.PullAddr
+	t.PushAddr = m.PushAddr
+	t.ExpireTime = m.ExpireTime.Format(time.RFC3339)
+	return t
+}
+
+type ListPreviewTasksResponse struct {
+	Items []PreviewTask `json:"items"`
+}

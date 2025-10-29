@@ -26,3 +26,7 @@ influxdb:
   bucket: lumina
   token: lumina-dev-token
   enabled: true
+redis:
+  masterName: mymaster
+  sentinelAddrs:
+    - 127.0.0.1:46380

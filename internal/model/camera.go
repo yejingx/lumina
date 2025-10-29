@@ -1,7 +1,9 @@
 package model
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -86,4 +88,42 @@ func ListCameras(start, limit int) ([]Camera, int64, error) {
 		return nil, 0, err
 	}
 	return cameras, total, nil
+}
+
+type PreviewTask struct {
+	TaskUuid   string    `json:"taskUuid"`
+	PullAddr   string    `json:"pullAddr"`
+	PushAddr   string    `json:"pushAddr"`
+	ExpireTime time.Time `json:"expireTime,omitempty"`
+}
+
+const previewKeyTemplate = "preview:%s:%s"
+const previewExpire = time.Minute
+
+func previewKey(deviceUuid, cameraUuid string) string {
+	return fmt.Sprintf(previewKeyTemplate, deviceUuid, cameraUuid)
+}
+
+func AddPreviewTask(ctx context.Context, deviceUuid, cameraUuid string, args *PreviewTask) error {
+	return Redis.Set(ctx, previewKey(deviceUuid, cameraUuid), args, previewExpire).Err()
+}
+
+func TouchPreviewTask(ctx context.Context, deviceUuid, cameraUuid string) error {
+	return Redis.Touch(ctx, previewKey(deviceUuid, cameraUuid)).Err()
+}
+
+func GetPreviewTasksByDeviceUuid(ctx context.Context, deviceUuid string) ([]*PreviewTask, error) {
+	var tasks []*PreviewTask
+	keys, err := Redis.Keys(ctx, fmt.Sprintf(previewKeyTemplate, deviceUuid, "*")).Result()
+	if err != nil {
+		return nil, err
+	}
+	for _, key := range keys {
+		var task PreviewTask
+		if err := Redis.Get(ctx, key).Scan(&task); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, &task)
+	}
+	return tasks, nil
 }

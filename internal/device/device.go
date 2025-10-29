@@ -29,6 +29,7 @@ type Device struct {
 	deviceInfo  *metadata.DeviceInfo
 	nsqProducer *nsq.Producer
 	minioCli    *minio.Client
+	previewJobs map[string]*PreviewJob
 }
 
 func NewDevice(conf *config.Config) (*Device, error) {
@@ -92,6 +93,7 @@ func NewDevice(conf *config.Config) (*Device, error) {
 		deviceInfo:  info,
 		nsqProducer: producer,
 		minioCli:    minioCli,
+		previewJobs: make(map[string]*PreviewJob),
 	}, nil
 }
 
@@ -115,6 +117,9 @@ func (a *Device) Start() {
 			}
 			if err := a.reportDeviceStatus(); err != nil {
 				a.logger.WithError(err).Errorf("report device status failed")
+			}
+			if err := a.syncPreviewTasksFromServer(); err != nil {
+				a.logger.WithError(err).Errorf("sync preview tasks from server failed")
 			}
 		case <-syncTicker.C:
 			a.logger.Debug("sync tick")

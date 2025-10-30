@@ -425,3 +425,12 @@ export interface JobStatsResponse {
   messages: TimeCount[];
   labels?: LabelTimeCount[];
 }
+
+// 预览任务类型
+export interface PreviewTask {
+  taskUuid: string;
+  previewAddr: string;
+  pullAddr: string;
+  pushAddr: string;
+  expireTime: string;
+}

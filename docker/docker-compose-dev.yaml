@@ -105,6 +105,8 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=no
       - REDIS_PASSWORD=lumina
+      # 只在开发模式下加关闭 appendonly 模式
+      - REDIS_EXTRA_FLAGS=--appendonly no
     volumes:
       - ${LUMINA_DATA:-./volumes}/redis_data:/bitnami/redis/data
     healthcheck:
@@ -114,7 +116,7 @@ services:
       retries: 5
 
   redis-sentinel:
-    image: bitnami/redis-sentinel:8.0
+    image: bitnami/redis-sentinel
     container_name: lumina-redis-sentinel
     networks:
       - lumina-bridge
@@ -123,8 +125,8 @@ services:
     ports:
       - "46380:26379"
     environment:
-      - REDIS_MASTER_HOST=redis
-      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_HOST=127.0.0.1
+      - REDIS_MASTER_PORT_NUMBER=46379
       - REDIS_MASTER_PASSWORD=lumina
       - REDIS_SENTINEL_QUORUM=1
     healthcheck:
@@ -132,3 +134,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  zlmediakit:
+    image: zlmediakit/zlmediakit:master
+    container_name: lumina-zlmediakit
+    networks:
+      - lumina-bridge
+    ports:
+      - "38080:80"      # HTTP Web
+      - "31935:1935"    # RTMP
+      - "30554:554"     # RTSP
+      - "38081:8080"    # HTTP API (if enabled)
+    environment:
+      TZ: Asia/Shanghai
+    restart: unless-stopped

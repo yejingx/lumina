@@ -1,6 +1,7 @@
 package device
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"strings"
 	"time"
 
 	"lumina/internal/dao"
@@ -120,9 +122,29 @@ func (a *Device) startPreviewJob(ctx context.Context, task *dao.PreviewTask) *Pr
 				return
 			default:
 			}
-			cmd := exec.CommandContext(job.ctx, "ffmpeg", "-i", task.PullAddr,
-				"-an", "-c:v", "copy", "-f", "flv", task.PushAddr)
-			err := cmd.Run()
+			// 先探测输入流的编码格式
+			codec, err := probeVideoCodec(job.ctx, task.PullAddr)
+			if err != nil {
+				a.logger.WithField("taskUuid", task.TaskUuid).Warnf("ffprobe failed, default to copy, err: %v", err)
+			} else {
+				a.logger.WithField("taskUuid", task.TaskUuid).Infof("detected input codec: %s", codec)
+			}
+
+			// 根据编码选择是否转码
+			args := []string{"-i", task.PullAddr, "-an"}
+			switch strings.ToLower(codec) {
+			case "h264":
+				args = append(args, "-c:v", "copy")
+			case "hevc", "h265":
+				args = append(args, "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p")
+			default:
+				// 未知编码时默认尝试直接复制
+				args = append(args, "-c:v", "copy")
+			}
+			args = append(args, "-f", "flv", task.PushAddr)
+
+			cmd := exec.CommandContext(job.ctx, "ffmpeg", args...)
+			err = cmd.Run()
 			if err != nil {
 				a.logger.WithField("taskUuid", task.TaskUuid).Errorf("preview job failed, err: %v", err)
 				time.Sleep(5 * time.Second)
@@ -132,4 +154,23 @@ func (a *Device) startPreviewJob(ctx context.Context, task *dao.PreviewTask) *Pr
 	}()
 
 	return job
+}
+
+// 使用 ffprobe 探测视频编码
+func probeVideoCodec(ctx context.Context, input string) (string, error) {
+	cmd := exec.CommandContext(ctx, "ffprobe",
+		"-v", "error",
+		"-select_streams", "v:0",
+		"-show_entries", "stream=codec_name",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		input,
+	)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	codec := strings.TrimSpace(out.String())
+	return codec, nil
 }

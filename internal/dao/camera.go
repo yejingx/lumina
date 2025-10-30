@@ -59,6 +59,7 @@ func FromCameraModel(m *model.Camera) (*CameraSpec, error) {
 	c.Port = int(m.Port)
 	c.Path = m.Path
 	c.Username = m.Username
+	c.Password = m.Password
 	c.CreateTime = m.CreateTime.Format(time.RFC3339)
 	c.UpdateTime = m.UpdateTime.Format(time.RFC3339)
 	if m.BindDeviceId != 0 {
@@ -149,10 +150,11 @@ func (req *UpdateCameraRequest) UpdateModel(c *model.Camera) {
 }
 
 type PreviewTask struct {
-	TaskUuid   string `json:"taskUuid"`
-	PullAddr   string `json:"pullAddr"`
-	PushAddr   string `json:"pushAddr"`
-	ExpireTime string `json:"expireTime"`
+	TaskUuid    string `json:"taskUuid"`
+	PullAddr    string `json:"pullAddr"`
+	PushAddr    string `json:"pushAddr"`
+	PreviewAddr string `json:"previewAddr"`
+	ExpireTime  string `json:"expireTime"`
 }
 
 func (t PreviewTask) Expired() bool {
@@ -180,4 +182,5 @@ func FromPreviewTaskModel(m *model.PreviewTask) *PreviewTask {
 
 type ListPreviewTasksResponse struct {
 	Items []PreviewTask `json:"items"`
+	Total int64         `json:"total"`
 }

@@ -454,3 +454,32 @@ func (s *Server) handleReportDeviceStatus(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{})
 }
+
+// handleGetDevicePreviewTasks 获取设备的预览任务列表
+// @Summary 获取设备的预览任务列表
+// @Description 获取设备的预览任务列表
+// @Tags 设备
+// @Accept json
+// @Produce json
+// @Param device_id path int true "设备ID"
+// @Success 200 {object} dao.ListPreviewTasksResponse "获取成功"
+// @Failure 400 {object} ErrorResponse "请求参数错误"
+// @Failure 401 {object} ErrorResponse "未授权"
+// @Failure 500 {object} ErrorResponse "内部服务器错误"
+// @Router /api/v1/device/preview-tasks [get]
+func (s *Server) handleGetDevicePreviewTasks(c *gin.Context) {
+	device := c.MustGet(deviceKey).(*model.Device)
+	previewTasks, err := model.GetPreviewTasksByDeviceUuid(c, device.Uuid)
+	if err != nil {
+		s.writeError(c, http.StatusInternalServerError, err)
+		return
+	}
+	resp := dao.ListPreviewTasksResponse{
+		Items: make([]dao.PreviewTask, 0, len(previewTasks)),
+		Total: int64(len(previewTasks)),
+	}
+	for _, t := range previewTasks {
+		resp.Items = append(resp.Items, *dao.FromPreviewTaskModel(t))
+	}
+	c.JSON(http.StatusOK, resp)
+}

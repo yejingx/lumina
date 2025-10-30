@@ -470,6 +470,15 @@ definitions:
       total:
         type: integer
     type: object
+  dao.ListPreviewTasksResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dao.PreviewTask'
+        type: array
+      total:
+        type: integer
+    type: object
   dao.ListUsersResponse:
     properties:
       items:
@@ -532,6 +541,19 @@ definitions:
         type: string
       workflowResp:
         $ref: '#/definitions/dao.WorkflowResp'
+    type: object
+  dao.PreviewTask:
+    properties:
+      expireTime:
+        type: string
+      previewAddr:
+        type: string
+      pullAddr:
+        type: string
+      pushAddr:
+        type: string
+      taskUuid:
+        type: string
     type: object
   dao.RegisterRequest:
     properties:
@@ -1101,6 +1123,85 @@ paths:
       summary: 更新摄像头
       tags:
       - 摄像头
+  /api/v1/camera/{camera_id}/preview:
+    post:
+      consumes:
+      - application/json
+      description: 开始摄像头预览
+      parameters:
+      - description: 摄像头ID
+        in: path
+        name: camera_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 预览任务
+          schema:
+            $ref: '#/definitions/dao.PreviewTask'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 摄像头不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "409":
+          description: 预览任务已存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 开始摄像头预览
+      tags:
+      - 摄像头
+    put:
+      consumes:
+      - application/json
+      description: 刷新摄像头预览任务过期时间
+      parameters:
+      - description: 摄像头ID
+        in: path
+        name: camera_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "404":
+          description: 摄像头不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "409":
+          description: 预览任务不存在
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 刷新摄像头预览任务过期时间
+      tags:
+      - 摄像头
   /api/v1/device:
     get:
       consumes:
@@ -1233,6 +1334,39 @@ paths:
           schema:
             $ref: '#/definitions/server.ErrorResponse'
       summary: 获取设备的作业列表
+      tags:
+      - 设备
+  /api/v1/device/preview-tasks:
+    get:
+      consumes:
+      - application/json
+      description: 获取设备的预览任务列表
+      parameters:
+      - description: 设备ID
+        in: path
+        name: device_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/dao.ListPreviewTasksResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: '#/definitions/server.ErrorResponse'
+      summary: 获取设备的预览任务列表
       tags:
       - 设备
   /api/v1/device/register:

@@ -30,3 +30,10 @@ redis:
   masterName: mymaster
   sentinelAddrs:
     - 127.0.0.1:46380
+  password: lumina
+mediaServer:
+  ip: 192.168.3.27
+  rtmpPort: 31935
+  rtspPort: 30554
+  httpPort: 38080
+  pathPrefix: /preview

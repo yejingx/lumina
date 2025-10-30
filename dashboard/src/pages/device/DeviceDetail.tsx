@@ -174,8 +174,7 @@ const DeviceDetail: React.FC = () => {
 
       <Card title={`主机详情 - ${device.uuid}`}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="主机ID">{device.id}</Descriptions.Item>
-          <Descriptions.Item label="主机UUID">
+          <Descriptions.Item label="UUID">
             <Space>
               <Tag color="blue">{device.uuid}</Tag>
               <Button

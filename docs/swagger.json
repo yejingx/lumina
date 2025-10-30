@@ -589,6 +589,125 @@
                 }
             }
         },
+        "/api/v1/camera/{camera_id}/preview": {
+            "put": {
+                "description": "刷新摄像头预览任务过期时间",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "刷新摄像头预览任务过期时间",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "摄像头ID",
+                        "name": "camera_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "刷新成功"
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "摄像头不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "预览任务不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "开始摄像头预览",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "摄像头"
+                ],
+                "summary": "开始摄像头预览",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "摄像头ID",
+                        "name": "camera_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "预览任务",
+                        "schema": {
+                            "$ref": "#/definitions/dao.PreviewTask"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "摄像头不存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "预览任务已存在",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/device": {
             "get": {
                 "description": "列出设备",
@@ -673,6 +792,56 @@
                         "description": "获取成功",
                         "schema": {
                             "$ref": "#/definitions/dao.ListJobsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/device/preview-tasks": {
+            "get": {
+                "description": "获取设备的预览任务列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "设备"
+                ],
+                "summary": "获取设备的预览任务列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "设备ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/dao.ListPreviewTasksResponse"
                         }
                     },
                     "400": {
@@ -2987,6 +3156,20 @@
                 }
             }
         },
+        "dao.ListPreviewTasksResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.PreviewTask"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dao.ListUsersResponse": {
             "type": "object",
             "properties": {
@@ -3078,6 +3261,26 @@
                 },
                 "workflowResp": {
                     "$ref": "#/definitions/dao.WorkflowResp"
+                }
+            }
+        },
+        "dao.PreviewTask": {
+            "type": "object",
+            "properties": {
+                "expireTime": {
+                    "type": "string"
+                },
+                "previewAddr": {
+                    "type": "string"
+                },
+                "pullAddr": {
+                    "type": "string"
+                },
+                "pushAddr": {
+                    "type": "string"
+                },
+                "taskUuid": {
+                    "type": "string"
                 }
             }
         },

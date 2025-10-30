@@ -222,6 +222,14 @@ export const cameraApi = {
   get: (cameraId: number): Promise<CameraSpec> =>
     api.get(`/camera/${cameraId}`),
 
+  // 开始摄像头预览
+  startPreview: (cameraId: number): Promise<import('../types').PreviewTask> =>
+    api.post(`/camera/${cameraId}/preview`),
+
+  // 刷新（触摸）摄像头预览任务过期时间
+  touchPreview: (cameraId: number): Promise<void> =>
+    api.put(`/camera/${cameraId}/preview`),
+
   // 创建摄像头
   create: (data: CreateCameraRequest): Promise<CreateCameraResponse> =>
     api.post('/camera', data),

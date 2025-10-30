@@ -41,7 +41,9 @@ type InfluxDBConfig struct {
 
 type MediaServerConfig struct {
 	Ip         string `yaml:"ip"`
-	Port       int    `yaml:"port"`
+	RtmpPort   int    `yaml:"rtmpPort"`
+	RtspPort   int    `yaml:"rtspPort"`
+	HttpPort   int    `yaml:"httpPort"`
 	PathPrefix string `yaml:"pathPrefix"`
 }
 
@@ -82,7 +84,9 @@ func DefaultConfig() *Config {
 		},
 		MediaServer: MediaServerConfig{
 			Ip:         "127.0.0.1",
-			Port:       1935,
+			RtmpPort:   1935,
+			RtspPort:   554,
+			HttpPort:   3080,
 			PathPrefix: "/preview",
 		},
 		Redis: *model.DefaultRedisConfig(),

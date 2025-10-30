@@ -2,10 +2,12 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -105,22 +107,44 @@ func previewKey(deviceUuid, cameraUuid string) string {
 }
 
 func AddPreviewTask(ctx context.Context, deviceUuid, cameraUuid string, args *PreviewTask) error {
-	return Redis.Set(ctx, previewKey(deviceUuid, cameraUuid), args, previewExpire).Err()
+	data, _ := json.Marshal(args)
+	return Redis.Set(ctx, previewKey(deviceUuid, cameraUuid), data, previewExpire).Err()
+}
+
+func GetPreviewTask(ctx context.Context, deviceUuid, cameraUuid string) (*PreviewTask, error) {
+	var data []byte
+	if err := Redis.Get(ctx, previewKey(deviceUuid, cameraUuid)).Scan(&data); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var task PreviewTask
+	if err := json.Unmarshal(data, &task); err != nil {
+		return nil, err
+	}
+
+	return &task, nil
 }
 
 func TouchPreviewTask(ctx context.Context, deviceUuid, cameraUuid string) error {
-	return Redis.Touch(ctx, previewKey(deviceUuid, cameraUuid)).Err()
+	return Redis.Expire(ctx, previewKey(deviceUuid, cameraUuid), previewExpire).Err()
 }
 
 func GetPreviewTasksByDeviceUuid(ctx context.Context, deviceUuid string) ([]*PreviewTask, error) {
-	var tasks []*PreviewTask
 	keys, err := Redis.Keys(ctx, fmt.Sprintf(previewKeyTemplate, deviceUuid, "*")).Result()
 	if err != nil {
 		return nil, err
 	}
+	var tasks []*PreviewTask
 	for _, key := range keys {
+		var data []byte
+		if err := Redis.Get(ctx, key).Scan(&data); err != nil {
+			return nil, err
+		}
 		var task PreviewTask
-		if err := Redis.Get(ctx, key).Scan(&task); err != nil {
+		if err := json.Unmarshal(data, &task); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, &task)

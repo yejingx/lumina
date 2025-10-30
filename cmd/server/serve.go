@@ -41,6 +41,14 @@ func runServe() {
 		sqlDB.Close()
 	}()
 
+	rds, err := model.InitRedis(conf.Redis)
+	if err != nil {
+		logrus.Fatal("failed to init redis", err)
+	}
+	defer func() {
+		rds.Close()
+	}()
+
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	srv, err := server.NewServer(ctx, conf)

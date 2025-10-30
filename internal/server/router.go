@@ -50,6 +50,7 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	deviceAuthed := device.Group("").Use(DeviceAuth())
 	deviceAuthed.POST("/unregister", s.handleUnregister)
 	deviceAuthed.GET("/jobs", s.handleGetDeviceJobs)
+	deviceAuthed.GET("/preview-tasks", s.handleGetDevicePreviewTasks)
 	deviceAuthed.POST("/report-status", s.handleReportDeviceStatus)
 
 	accessToken := apiV1.Group("/access-token")
@@ -66,12 +67,15 @@ func (s *Server) SetUpApiV1Router(apiV1 *gin.RouterGroup) {
 	workflow.DELETE("/:workflow_id", s.handleDeleteWorkflow)
 
 	// Camera routes
-	camera := apiV1.Group("/camera")
-	camera.GET("", s.handleListCameras)
-	camera.POST("", s.handleCreateCamera)
-	camera.GET("/:camera_id", s.handleGetCamera)
-	camera.PUT("/:camera_id", s.handleUpdateCamera)
-	camera.DELETE("/:camera_id", s.handleDeleteCamera)
+	apiV1.GET("/camera", s.handleListCameras)
+	apiV1.POST("/camera", s.handleCreateCamera)
+	camera := apiV1.Group("/camera/:camera_id")
+	camera.Use(SetCameraToContext())
+	camera.GET("", s.handleGetCamera)
+	camera.PUT("", s.handleUpdateCamera)
+	camera.DELETE("", s.handleDeleteCamera)
+	camera.POST("/preview", s.handleStartCameraPreview)
+	camera.PUT("/preview", s.handleTouchCameraPreview)
 
 	job := apiV1.Group("/job")
 	job.Use(SetJobToContext())

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, message, Modal, Card, Tag, Drawer } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { cameraApi } from '../../services/api';
 import { formatDate } from '../../utils/helpers';
@@ -64,12 +64,6 @@ const CameraList: React.FC = () => {
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
-    {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
@@ -117,7 +111,14 @@ const CameraList: React.FC = () => {
       title: '操作',
       key: 'action',
       render: (_: any, record: CameraSpec) => (
-        <Space size="middle">
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<VideoCameraOutlined />}
+            onClick={() => navigate(`/cameras/${record.id}?tab=preview`)}
+          >
+            预览
+          </Button>
           <Button
             type="text"
             icon={<EyeOutlined />}

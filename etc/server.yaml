@@ -1,4 +1,4 @@
-addr: 0.0.0.0:8181
+addr: 0.0.0.0:18481
 jwtSecret: 13gjqFfRWgTdKQqzMOrdAw
 
 db:

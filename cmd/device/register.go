@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	serverAddr    = "http://localhost:8181"
+	serverAddr    = "http://localhost:18481"
 	uuid          = ""
 	showSensitive = false
 	deviceName    = ""

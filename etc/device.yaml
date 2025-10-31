@@ -1,4 +1,4 @@
-luminaServerAddr: http://localhost:8181
+luminaServerAddr: http://localhost:18481
 triton:
   serverAddr: 192.168.3.222:8001
 s3:

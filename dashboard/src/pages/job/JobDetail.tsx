@@ -35,7 +35,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { jobApi, messageApi, deviceApi, workflowApi } from '../../services/api';
-import type { Job, Message, Device, Workflow, ListParams, JobStatsResponse, JobStatsRequest } from '../../types';
+import type { Job, Message, Device, Workflow, ListParams, JobStatsResponse, JobStatsRequest, CameraSpec } from '../../types';
 import { formatDate, handleApiError, getDeleteConfirmConfig, isOlderThanMinutes } from '../../utils/helpers';
 import { JOB_STATUS_MAP, JOB_KIND_MAP, MESSAGE_TYPE_MAP, DEFAULT_PAGE_SIZE } from '../../utils/constants';
 import JobForm from './JobForm';
@@ -70,6 +70,30 @@ const JobDetail: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
   const [onlyAlerted, setOnlyAlerted] = useState(true);
+
+  // Navigate to device detail when clicking host name
+  const handleViewDevice = (d?: Device) => {
+    const id = d?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/devices/${id}`);
+    }
+  };
+
+  // Navigate to camera detail when clicking camera
+  const handleViewCamera = (c?: CameraSpec) => {
+    const id = c?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/cameras/${id}`);
+    }
+  };
+
+  // Navigate to workflow detail when clicking workflow
+  const handleViewWorkflow = (w?: Workflow) => {
+    const id = w?.id;
+    if (id !== undefined && id !== null) {
+      navigate(`/workflows/${id}`);
+    }
+  };
 
   // 统计数据状态
   const [stats, setStats] = useState<JobStatsResponse | null>(null);
@@ -354,13 +378,46 @@ const JobDetail: React.FC = () => {
               )}
             </Descriptions.Item>
             <Descriptions.Item label="摄像头">
-              {job?.camera ? `${job.camera.name} (${job.camera.uuid})` : '-'}
+              {job?.camera ? (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleViewCamera(job.camera)}
+                  style={{ padding: 0 }}
+                >
+                  {job.camera.name || job.camera.uuid || '-'}
+                </Button>
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
-            <Descriptions.Item label="关联设备">
-              {job.device.name}
+            <Descriptions.Item label="运行主机">
+              {job?.device ? (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleViewDevice(job.device)}
+                  style={{ padding: 0 }}
+                >
+                  {job.device.name || job.device.uuid || '-'}
+                </Button>
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="工作流">
-              {job.workflow?.name || '-'}
+              {job?.workflow ? (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleViewWorkflow(job.workflow)}
+                  style={{ padding: 0 }}
+                >
+                  {job.workflow.name || (job as any).workflow?.uuid || '-'}
+                </Button>
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
 
             <Descriptions.Item label="创建时间">

@@ -112,15 +112,21 @@ func (c *Consumer) HandleMessage(message *nsq.Message) error {
 		c.logger.WithError(err).Errorf("Failed to call WorkflowManager API for job %s", msg.JobUuid)
 		return err
 	}
-	answer := resp.Choices[0].Message.Content
-	c.logger.Infof("workflow response for job %s: %s", msg.JobUuid, answer)
+	answer := parseResponseContent(resp.Choices[0].Message.Content)
+	c.logger.Infof("workflow response for job %s: %+v", msg.JobUuid, answer)
 
 	m := msg.ToModel(job)
 	m.WorkflowResp = &model.WorkflowResp{
 		TotalTokens: resp.Usage.TotalTokens,
-		Answer:      answer,
+		Answer:      answer.Reason,
+		Confidence:  answer.Confidence,
+		Match:       answer.Match,
+		RawContent:  resp.Choices[0].Message.Content,
 	}
-	if wf.ResultFilter != nil && wf.ResultFilter.Match(answer) {
+	// if wf.ResultFilter != nil && wf.ResultFilter.Match(answer) {
+	// 	m.Alerted = true
+	// }
+	if answer.Match {
 		m.Alerted = true
 	}
 	if err := model.AddMessage(m); err != nil {

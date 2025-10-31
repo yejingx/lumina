@@ -218,7 +218,7 @@ const JobList: React.FC = () => {
       },
     },
     {
-      title: '关联设备',
+      title: '运行主机',
       dataIndex: 'device',
       key: 'device',
       width: 100,

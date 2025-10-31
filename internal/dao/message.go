@@ -61,12 +61,20 @@ func (m DeviceMessage) ToModel(job *model.Job) *model.Message {
 }
 
 type WorkflowResp struct {
-	Answer string `json:"answer,omitempty"`
+	Answer      string  `json:"answer,omitempty"`
+	RawContent  string  `json:"rawContent,omitempty"`
+	Confidence  float32 `json:"confidence,omitempty"`
+	Match       bool    `json:"match,omitempty"`
+	TotalTokens int     `json:"totalTokens,omitempty"`
 }
 
 func (w WorkflowResp) ToModel() *model.WorkflowResp {
 	return &model.WorkflowResp{
-		Answer: w.Answer,
+		Answer:      w.Answer,
+		RawContent:  w.RawContent,
+		Confidence:  w.Confidence,
+		Match:       w.Match,
+		TotalTokens: w.TotalTokens,
 	}
 }
 
@@ -112,7 +120,11 @@ func FromMessageModel(msg *model.Message) *MessageSpec {
 
 	if msg.WorkflowResp != nil {
 		m.WorkflowResp = &WorkflowResp{
-			Answer: msg.WorkflowResp.Answer,
+			Answer:      msg.WorkflowResp.Answer,
+			RawContent:  msg.WorkflowResp.RawContent,
+			Confidence:  msg.WorkflowResp.Confidence,
+			Match:       msg.WorkflowResp.Match,
+			TotalTokens: msg.WorkflowResp.TotalTokens,
 		}
 	}
 

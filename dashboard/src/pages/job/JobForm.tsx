@@ -216,6 +216,7 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
           min={1}
           placeholder="分割间隔（秒）"
           style={{ width: '100%' }}
+          defaultValue={10}
         />
       </Form.Item>
     </>
@@ -259,8 +260,8 @@ const JobForm: React.FC<JobFormProps> = ({ job, onSubmit, onCancel }) => {
 
       <Form.Item
         name="deviceId"
-        label="关联设备"
-        rules={[{ required: true, message: '请选择关联设备' }]}
+        label="运行主机"
+        rules={[{ required: true, message: '请选择运行主机' }]}
       >
         <Select placeholder="请选择设备" allowClear>
           {devices.map((device) => (

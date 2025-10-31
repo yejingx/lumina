@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"lumina/internal/dao"
@@ -48,7 +49,18 @@ type OpenAIRequestMessageContent struct {
 	} `json:"video_url,omitempty"`
 }
 
-const systemPrompt = `You are a helpful assistant that can analyze images and videos.`
+// const systemPrompt = `You are a helpful assistant that can analyze images and videos.`
+const systemPrompt = `You are a helpful assistant that can analyze images and videos. Respond **only** in valid JSON format with no extra text.
+The JSON must include the following fields:  
+- match (boolean)  
+- confidence (float, range 0–1)  
+- reason (short explanation in **Chinese**)`
+
+type Answer struct {
+	Match      bool    `json:"match"`
+	Confidence float32 `json:"confidence"`
+	Reason     string  `json:"reason"`
+}
 
 func (v *WorkflowManager) ImageCompletion(wf *model.Workflow, imageURL string, boxes []*dao.DetectionBox) (*OpenAIResponse, error) {
 	prompt := systemPrompt
@@ -61,12 +73,13 @@ func (v *WorkflowManager) ImageCompletion(wf *model.Workflow, imageURL string, b
 		prompt += "\n\n"
 	}
 
+	query := fmt.Sprintf("Determine whether the given image meets the user's requirements. \nUser Requirements: %s", wf.Query)
 	req := OpenAIRequest{
 		Model: wf.ModelName,
 		Messages: []OpenAIRequestMessage{
 			{Role: "system", Content: []OpenAIRequestMessageContent{{Type: "text", Text: prompt}}},
 			{Role: "user", Content: []OpenAIRequestMessageContent{
-				{Type: "text", Text: wf.Query},
+				{Type: "text", Text: query},
 				{Type: "image_url", ImageUrl: struct {
 					Url string `json:"url"`
 				}{Url: imageURL}},
@@ -79,12 +92,13 @@ func (v *WorkflowManager) ImageCompletion(wf *model.Workflow, imageURL string, b
 }
 
 func (v *WorkflowManager) VideoCompletion(wf *model.Workflow, videoURL string) (*OpenAIResponse, error) {
+	query := fmt.Sprintf("Determine whether the given video clip meets the user's requirements. \nUser Requirements: %s", wf.Query)
 	req := OpenAIRequest{
 		Model: wf.ModelName,
 		Messages: []OpenAIRequestMessage{
 			{Role: "system", Content: []OpenAIRequestMessageContent{{Type: "text", Text: systemPrompt}}},
 			{Role: "user", Content: []OpenAIRequestMessageContent{
-				{Type: "text", Text: wf.Query},
+				{Type: "text", Text: query},
 				{Type: "video_url", VideoUrl: struct {
 					Url string `json:"url"`
 				}{Url: videoURL}},
@@ -162,4 +176,58 @@ func (v *WorkflowManager) chatCompletion(wf *model.Workflow, r OpenAIRequest) (*
 	}
 
 	return nil, fmt.Errorf("no choices found in response")
+}
+
+func parseResponseContent(text string) Answer {
+	if strings.TrimSpace(text) == "" {
+		return Answer{
+			Match:      false,
+			Confidence: 0.0,
+			Reason:     "空响应",
+		}
+	}
+
+	// 尝试整体解析
+	var result Answer
+	if err := json.Unmarshal([]byte(text), &result); err == nil {
+		return result
+	}
+
+	// 尝试截取第一个 {...}
+	start := strings.Index(text, "{")
+	end := strings.LastIndex(text, "}")
+	if start != -1 && end != -1 && end > start {
+		sub := text[start : end+1]
+		if err := json.Unmarshal([]byte(sub), &result); err == nil {
+			return result
+		}
+	}
+
+	// 兜底：关键字猜测
+	lowered := strings.ToLower(text)
+	match := strings.Contains(lowered, "yes") ||
+		strings.Contains(lowered, "true") ||
+		strings.Contains(lowered, "匹配")
+
+	reason := "无法解析"
+	trimmed := strings.TrimSpace(text)
+	if trimmed != "" {
+		lines := strings.Split(trimmed, "\n")
+		if len(lines[0]) > 100 {
+			reason = lines[0][:100]
+		} else {
+			reason = lines[0]
+		}
+	}
+
+	confidence := 0.0
+	if match {
+		confidence = 0.5
+	}
+
+	return Answer{
+		Match:      match,
+		Confidence: float32(confidence),
+		Reason:     reason,
+	}
 }

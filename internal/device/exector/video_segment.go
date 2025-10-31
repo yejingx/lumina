@@ -40,6 +40,36 @@ type VideoSegmentor struct {
 	deviceInfo  *metadata.DeviceInfo
 }
 
+// tailBuffer stores only the last N bytes written to it to avoid unbounded memory growth.
+// It implements io.Writer and provides String() to read the buffered content.
+type tailBuffer struct {
+	buf []byte
+	max int
+}
+
+func newTailBuffer(max int) *tailBuffer {
+	return &tailBuffer{max: max}
+}
+
+func (t *tailBuffer) Write(p []byte) (int, error) {
+	// If incoming chunk exceeds the capacity, keep only its tail.
+	if len(p) >= t.max {
+		t.buf = append([]byte{}, p[len(p)-t.max:]...)
+		return len(p), nil
+	}
+	total := len(t.buf) + len(p)
+	if total <= t.max {
+		t.buf = append(t.buf, p...)
+		return len(p), nil
+	}
+	// Drop from the head to make room.
+	toDrop := min(total-t.max, len(t.buf))
+	t.buf = append(t.buf[toDrop:], p...)
+	return len(p), nil
+}
+
+func (t *tailBuffer) String() string { return string(t.buf) }
+
 func NewVideoSegmentor(conf *config.Config, deviceInfo *metadata.DeviceInfo, parentCtx context.Context,
 	minioCli *minio.Client, nsqProducer *nsq.Producer, job *dao.JobSpec) (*VideoSegmentor, error) {
 	if job.VideoSegment == nil {
@@ -109,6 +139,7 @@ func (e *VideoSegmentor) runJob() {
 	args := []string{
 		"-i", e.job.Input(), // 输入视频流
 		"-c", "copy", // 复制编码，不重新编码
+		"-an",           // 去掉音频流
 		"-f", "segment", // 使用 segment 格式
 		"-segment_time", fmt.Sprintf("%d", interval), // 分段时间间隔
 		"-segment_format", "mp4", // 分段格式
@@ -123,6 +154,9 @@ func (e *VideoSegmentor) runJob() {
 
 	cmd := exec.CommandContext(e.ctx, "ffmpeg", args...)
 	cmd.Dir = e.workDir
+	// Capture stderr output with a bounded tail buffer to prevent memory blowup
+	stderr := newTailBuffer(64 * 1024) // 64KB tail
+	cmd.Stderr = stderr
 
 	if err := cmd.Start(); err != nil {
 		e.logger.WithError(err).Error("failed to start ffmpeg process")
@@ -144,15 +178,23 @@ func (e *VideoSegmentor) runJob() {
 			if err := cmd.Process.Kill(); err != nil {
 				e.logger.WithError(err).Error("failed to kill ffmpeg process")
 			} else {
+				// Log any stderr captured before termination
+				if s := strings.TrimSpace(stderr.String()); s != "" {
+					e.logger.Warnf("ffmpeg stderr before kill: %s", s)
+				}
 				e.logger.Info("ffmpeg process terminated")
 			}
 		}
 		e.status = model.ExectorStatusStopped
 	case err := <-done:
 		if err != nil {
-			e.logger.WithError(err).Error("ffmpeg process exited with error")
+			// Read captured stderr after process exit
+			e.logger.WithError(err).Errorf("ffmpeg process exited with error: %s", strings.TrimSpace(stderr.String()))
 			e.status = model.ExectorStatusFailed
 		} else {
+			if s := strings.TrimSpace(stderr.String()); s != "" {
+				e.logger.Infof("ffmpeg stderr output: %s", s)
+			}
 			e.logger.Info("ffmpeg process completed successfully")
 			e.status = model.ExectorStatusFinished
 		}

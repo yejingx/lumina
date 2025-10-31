@@ -23,6 +23,7 @@ const WorkflowForm: React.FC<WorkflowFormProps> = ({ workflow, onSubmit, onCance
         name: workflow.name,
         endpoint: workflow.endpoint || '',
         key: workflow.key || '',
+        modelName: workflow.modelName || '',
         timeout: workflow.timeout || 30000,
         query: workflow.query || '',
         resultFilter: workflow.resultFilter,
